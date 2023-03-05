@@ -5,29 +5,29 @@ import PackageDescription
 let package = Package(
     name: "HaishinKit",
     platforms: [
-        .iOS(.v9),
-        .tvOS(.v10),
-        .macOS(.v10_11)
+        .iOS(.v11),
+        .tvOS(.v11),
+        .macOS(.v10_13)
     ],
     products: [
         .library(name: "HaishinKit", targets: ["HaishinKit"])
     ],
     dependencies: [
-        .package(url: "https://github.com/shogo4405/Logboard.git", from: "2.2.2")
+        .package(url: "https://github.com/shogo4405/Logboard.git", from: "2.3.0")
     ],
     targets: [
         .target(name: "SwiftPMSupport"),
-        .target(name: "HaishinKit", dependencies: ["Logboard", "SwiftPMSupport"],
+        .target(name: "HaishinKit",
+                dependencies: ["Logboard", "SwiftPMSupport"],
                 path: "Sources",
                 sources: [
                     "Codec",
                     "Extension",
                     "FLV",
                     "HTTP",
-                    "ISO",
                     "Media",
+                    "MPEG",
                     "Net",
-                    "PiP",
                     "RTMP",
                     "Util",
                     "Platforms"

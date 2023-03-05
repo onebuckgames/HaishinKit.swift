@@ -2,12 +2,10 @@ import Foundation
 
 /**
  Message Digest Algorithm 5
-
- - seealso:
-  - https://ja.wikipedia.org/wiki/MD5
-  - https://www.ietf.org/rfc/rfc1321.txt
+ - seealso: https://ja.wikipedia.org/wiki/MD5
+ - seealso: https://www.ietf.org/rfc/rfc1321.txt
  */
-final class MD5 {
+enum MD5 {
     static let a: UInt32 = 0x67452301
     static let b: UInt32 = 0xefcdab89
     static let c: UInt32 = 0x98badcfe
@@ -104,6 +102,7 @@ final class MD5 {
         message[message.length - 2] = count[1]
         message[message.length - 1] = count[0]
 
+        // swiftlint:disable closure_body_length
         message.sequence(64) {
             let x: [UInt32] = $0.toUInt32()
 

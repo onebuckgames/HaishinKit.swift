@@ -337,7 +337,7 @@ final class RTMPCommandMessage: RTMPMessage {
             case "close":
                 connection.close(isDisconnected: true)
             default:
-                connection.dispatch(.rtmpStatus, bubbles: false, data: arguments.first)
+                connection.dispatch(.rtmpStatus, bubbles: false, data: arguments.first as Any?)
             }
             return
         }
@@ -422,7 +422,7 @@ final class RTMPDataMessage: RTMPMessage {
     }
 
     override func execute(_ connection: RTMPConnection, type: RTMPChunkType) {
-        guard let stream: RTMPStream = connection.streams[streamId] else {
+        guard let stream = connection.streams.first(where: { $0.id == streamId }) else {
             return
         }
         stream.info.byteCount.mutate { $0 += Int64(payload.count) }
@@ -539,9 +539,9 @@ final class RTMPAudioMessage: RTMPMessage {
 
             if length == newValue.count && !newValue.isEmpty {
                 guard let codec = FLVAudioCodec(rawValue: newValue[0] >> 4),
-                    let soundRate = FLVSoundRate(rawValue: (newValue[0] & 0b00001100) >> 2),
-                    let soundSize = FLVSoundSize(rawValue: (newValue[0] & 0b00000010) >> 1),
-                    let soundType = FLVSoundType(rawValue: (newValue[0] & 0b00000001)) else {
+                      let soundRate = FLVSoundRate(rawValue: (newValue[0] & 0b00001100) >> 2),
+                      let soundSize = FLVSoundSize(rawValue: (newValue[0] & 0b00000010) >> 1),
+                      let soundType = FLVSoundType(rawValue: (newValue[0] & 0b00000001)) else {
                     return
                 }
                 self.codec = codec
@@ -564,24 +564,29 @@ final class RTMPAudioMessage: RTMPMessage {
     }
 
     override func execute(_ connection: RTMPConnection, type: RTMPChunkType) {
-        guard let stream: RTMPStream = connection.streams[streamId] else {
+        guard let stream = connection.streams.first(where: { $0.id == streamId }) else {
             return
         }
         stream.info.byteCount.mutate { $0 += Int64(payload.count) }
         guard codec.isSupported else {
             return
         }
+        var duration = Int64(timestamp)
         switch type {
         case .zero:
-            stream.audioTimestamp = Double(timestamp)
+            if stream.audioTimestampZero == -1 {
+                stream.audioTimestampZero = Double(timestamp)
+            }
+            duration -= Int64(stream.audioTimestamp)
+            stream.audioTimestamp = Double(timestamp) - stream.audioTimestampZero
         default:
             stream.audioTimestamp += Double(timestamp)
         }
         switch FLVAACPacketType(rawValue: payload[1]) {
         case .seq?:
             let config = AudioSpecificConfig(bytes: [UInt8](payload[codec.headerSize..<payload.count]))
-            stream.mixer.audioIO.encoder.destination = .pcm
-            stream.mixer.audioIO.encoder.inSourceFormat = config?.audioStreamBasicDescription()
+            stream.mixer.audioIO.codec.destination = .pcm
+            stream.mixer.audioIO.codec.inSourceFormat = config?.audioStreamBasicDescription()
         case .raw?:
             enqueueSampleBuffer(stream, type: type)
         case .none:
@@ -590,12 +595,12 @@ final class RTMPAudioMessage: RTMPMessage {
     }
 
     private func enqueueSampleBuffer(_ stream: RTMPStream, type: RTMPChunkType) {
-        if stream.mixer.audioIO.encoder.inSourceFormat == nil {
-            stream.mixer.audioIO.encoder.destination = .pcm
-            stream.mixer.audioIO.encoder.inSourceFormat = codec.audioStreamBasicDescription(soundRate, size: soundSize, type: soundType)
+        if stream.mixer.audioIO.codec.inSourceFormat == nil {
+            stream.mixer.audioIO.codec.destination = .pcm
+            stream.mixer.audioIO.codec.inSourceFormat = codec.audioStreamBasicDescription(soundRate, size: soundSize, type: soundType)
         }
         payload.withUnsafeMutableBytes { (buffer: UnsafeMutableRawBufferPointer) -> Void in
-            stream.mixer.audioIO.encoder.encodeBytes(
+            stream.mixer.audioIO.codec.encodeBytes(
                 buffer.baseAddress?.advanced(by: codec.headerSize),
                 count: payload.count - codec.headerSize,
                 presentationTimeStamp: CMTime(seconds: stream.audioTimestamp / 1000, preferredTimescale: 1000)
@@ -624,7 +629,7 @@ final class RTMPVideoMessage: RTMPMessage {
     }
 
     override func execute(_ connection: RTMPConnection, type: RTMPChunkType) {
-        guard let stream: RTMPStream = connection.streams[streamId] else {
+        guard let stream = connection.streams.first(where: { $0.id == streamId }) else {
             return
         }
         stream.info.byteCount.mutate { $0 += Int64(payload.count) }
@@ -634,6 +639,7 @@ final class RTMPVideoMessage: RTMPMessage {
         switch payload[1] {
         case FLVAVCPacketType.seq.rawValue:
             status = makeFormatDescription(stream)
+            stream.mixer.mediaLink.hasVideo = true
             stream.dispatch(.rtmpStatus, bubbles: false, data: RTMPStream.Code.videoDimensionChange.data(""))
         case FLVAVCPacketType.nal.rawValue:
             enqueueSampleBuffer(stream, type: type)
@@ -643,72 +649,78 @@ final class RTMPVideoMessage: RTMPMessage {
     }
 
     private func enqueueSampleBuffer(_ stream: RTMPStream, type: RTMPChunkType) {
-        let isBaseline = stream.mixer.videoIO.decoder.isBaseline
+        let isBaseline = stream.mixer.videoIO.codec.isBaseline
 
         // compositionTime -> SI24
         var compositionTime = isBaseline ? 0 : Int32(data: [0] + payload[2..<5]).bigEndian
         compositionTime <<= 8
         compositionTime /= 256
 
+        var duration = Int64(timestamp)
         switch type {
         case .zero:
-            stream.videoTimestamp = Double(timestamp)
+            if stream.videoTimestampZero == -1 {
+                stream.videoTimestampZero = Double(timestamp)
+            }
+            duration -= Int64(stream.videoTimestamp)
+            stream.videoTimestamp = Double(timestamp) - stream.videoTimestampZero
         default:
             stream.videoTimestamp += Double(timestamp)
         }
 
         var timing = CMSampleTimingInfo(
-            duration: CMTimeMake(value: Int64(timestamp), timescale: 1000),
+            duration: CMTimeMake(value: duration, timescale: 1000),
             presentationTimeStamp: CMTimeMake(value: Int64(stream.videoTimestamp) + Int64(compositionTime), timescale: 1000),
             decodeTimeStamp: .invalid
         )
 
+        // swiftlint:disable closure_body_length
         payload.withUnsafeBytes { (buffer: UnsafeRawBufferPointer) -> Void in
             var blockBuffer: CMBlockBuffer?
             let length: Int = payload.count - FLVTagType.video.headerSize
             guard CMBlockBufferCreateWithMemoryBlock(
-                allocator: kCFAllocatorDefault,
-                memoryBlock: nil,
-                blockLength: length,
-                blockAllocator: nil,
-                customBlockSource: nil,
-                offsetToData: 0,
-                dataLength: length,
-                flags: 0,
-                blockBufferOut: &blockBuffer) == noErr else {
-                stream.mixer.videoIO.decoder.needsSync.mutate { $0 = true }
+                    allocator: kCFAllocatorDefault,
+                    memoryBlock: nil,
+                    blockLength: length,
+                    blockAllocator: nil,
+                    customBlockSource: nil,
+                    offsetToData: 0,
+                    dataLength: length,
+                    flags: 0,
+                    blockBufferOut: &blockBuffer) == noErr else {
+                stream.mixer.videoIO.codec.needsSync.mutate { $0 = true }
                 return
             }
             guard CMBlockBufferReplaceDataBytes(
-                with: buffer.baseAddress!.advanced(by: FLVTagType.video.headerSize),
-                blockBuffer: blockBuffer!,
-                offsetIntoDestination: 0,
-                dataLength: length) == noErr else {
+                    with: buffer.baseAddress!.advanced(by: FLVTagType.video.headerSize),
+                    blockBuffer: blockBuffer!,
+                    offsetIntoDestination: 0,
+                    dataLength: length) == noErr else {
                 return
             }
             var sampleBuffer: CMSampleBuffer?
             var sampleSizes: [Int] = [length]
             guard CMSampleBufferCreate(
-                allocator: kCFAllocatorDefault,
-                dataBuffer: blockBuffer!,
-                dataReady: true,
-                makeDataReadyCallback: nil,
-                refcon: nil,
-                formatDescription: stream.mixer.videoIO.formatDescription,
-                sampleCount: 1,
-                sampleTimingEntryCount: 1,
-                sampleTimingArray: &timing,
-                sampleSizeEntryCount: 1,
-                sampleSizeArray: &sampleSizes,
-                sampleBufferOut: &sampleBuffer) == noErr else {
+                    allocator: kCFAllocatorDefault,
+                    dataBuffer: blockBuffer!,
+                    dataReady: true,
+                    makeDataReadyCallback: nil,
+                    refcon: nil,
+                    formatDescription: stream.mixer.videoIO.formatDescription,
+                    sampleCount: 1,
+                    sampleTimingEntryCount: 1,
+                    sampleTimingArray: &timing,
+                    sampleSizeEntryCount: 1,
+                    sampleSizeArray: &sampleSizes,
+                    sampleBufferOut: &sampleBuffer) == noErr else {
                 return
             }
             if let sampleBuffer = sampleBuffer {
                 sampleBuffer.isNotSync = !(payload[0] >> 4 == FLVFrameType.key.rawValue)
-                stream.mixer.videoIO.decodeSampleBuffer(sampleBuffer)
+                stream.mixer.mediaLink.enqueueVideo(sampleBuffer)
             }
-            if stream.mixer.videoIO.queue.isPaused && stream.mixer.audioIO.encoder.formatDescription == nil {
-                stream.mixer.videoIO.queue.isPaused = false
+            if stream.mixer.mediaLink.isPaused && stream.mixer.audioIO.codec.formatDescription == nil {
+                stream.mixer.mediaLink.isPaused = false
             }
         }
     }
@@ -716,7 +728,7 @@ final class RTMPVideoMessage: RTMPMessage {
     private func makeFormatDescription(_ stream: RTMPStream) -> OSStatus {
         var config = AVCConfigurationRecord()
         config.data = payload.subdata(in: FLVTagType.video.headerSize..<payload.count)
-        return config.createFormatDescription(&stream.mixer.videoIO.formatDescription)
+        return config.makeFormatDescription(&stream.mixer.videoIO.formatDescription)
     }
 }
 
@@ -796,11 +808,11 @@ final class RTMPUserControlMessage: RTMPMessage {
                 type: .zero,
                 streamId: RTMPChunk.StreamID.control.rawValue,
                 message: RTMPUserControlMessage(event: .pong, value: value)
-            ), locked: nil)
+            ))
         case .bufferEmpty:
-            connection.streams[UInt32(value)]?.dispatch(.rtmpStatus, bubbles: false, data: RTMPStream.Code.bufferEmpty.data(""))
+            connection.streams.first(where: { $0.id == UInt32(value) })?.dispatch(.rtmpStatus, bubbles: false, data: RTMPStream.Code.bufferEmpty.data(""))
         case .bufferFull:
-            connection.streams[UInt32(value)]?.dispatch(.rtmpStatus, bubbles: false, data: RTMPStream.Code.bufferFull.data(""))
+            connection.streams.first(where: { $0.id == UInt32(value) })?.dispatch(.rtmpStatus, bubbles: false, data: RTMPStream.Code.bufferFull.data(""))
         default:
             break
         }

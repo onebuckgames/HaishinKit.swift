@@ -1,21 +1,33 @@
 import Foundation
 #if canImport(Network)
-    import Network
+import Network
 #endif
 
 @available(iOS 12.0, macOS 10.14, tvOS 12.0, *)
 final class RTMPNWSocket: RTMPSocketCompatible {
+    static let defaultWindowSizeC = Int(UInt8.max)
+
     var timestamp: TimeInterval = 0.0
     var chunkSizeC: Int = RTMPChunk.defaultSize
     var chunkSizeS: Int = RTMPChunk.defaultSize
-    var windowSizeC = Int(UInt8.max)
+    var windowSizeC = RTMPNWSocket.defaultWindowSizeC
     var timeout: Int = NetSocket.defaultTimeout
     var readyState: RTMPSocketReadyState = .uninitialized {
         didSet {
             delegate?.didSetReadyState(readyState)
         }
     }
-    var securityLevel: StreamSocketSecurityLevel = .none
+    var outputBufferSize: Int = RTMPNWSocket.defaultWindowSizeC
+    var securityLevel: StreamSocketSecurityLevel = .none {
+        didSet {
+            switch securityLevel {
+            case .ssLv2, .ssLv3, .tlSv1, .negotiatedSSL:
+                parameters = .tls
+            default:
+                parameters = .tcp
+            }
+        }
+    }
     var qualityOfService: DispatchQoS = .default
     var inputBuffer = Data()
     weak var delegate: RTMPSocketDelegate?
@@ -51,9 +63,7 @@ final class RTMPNWSocket: RTMPSocketCompatible {
     private var parameters: NWParameters = .tcp
     private lazy var inputQueue = DispatchQueue(label: "com.haishinkit.HaishinKit.NWSocket.input", qos: qualityOfService)
     private lazy var outputQueue = DispatchQueue(label: "com.haishinkit.HaishinKit.NWSocket.output", qos: qualityOfService)
-    private lazy var timeoutHandler = DispatchWorkItem { [weak self] in
-        self?.didTimeout()
-    }
+    private var timeoutHandler: DispatchWorkItem?
 
     func connect(withName: String, port: Int) {
         handshake.clear()
@@ -71,7 +81,14 @@ final class RTMPNWSocket: RTMPSocketCompatible {
             receive(on: connection)
         }
         if 0 < timeout {
-            DispatchQueue.global(qos: .userInteractive).asyncAfter(deadline: .now() + .seconds(timeout), execute: timeoutHandler)
+            let newTimeoutHandler = DispatchWorkItem { [weak self] in
+                guard let self = self, self.timeoutHandler?.isCancelled == false else {
+                    return
+                }
+                self.didTimeout()
+            }
+            timeoutHandler = newTimeoutHandler
+            DispatchQueue.global(qos: .userInteractive).asyncAfter(deadline: .now() + .seconds(timeout), execute: newTimeoutHandler)
         }
     }
 
@@ -85,17 +102,17 @@ final class RTMPNWSocket: RTMPSocketCompatible {
             events.append(Event(type: .rtmpStatus, bubbles: false, data: data))
         }
         readyState = .closing
-        timeoutHandler.cancel()
+        timeoutHandler?.cancel()
         connection = nil
     }
 
     @discardableResult
-    func doOutput(chunk: RTMPChunk, locked: UnsafeMutablePointer<UInt32>? = nil) -> Int {
+    func doOutput(chunk: RTMPChunk) -> Int {
         let chunks: [Data] = chunk.split(chunkSizeS)
         for i in 0..<chunks.count - 1 {
             doOutput(data: chunks[i])
         }
-        doOutput(data: chunks.last!, locked: locked)
+        doOutput(data: chunks.last!)
         if logger.isEnabledFor(level: .trace) {
             logger.trace(chunk)
         }
@@ -103,15 +120,10 @@ final class RTMPNWSocket: RTMPSocketCompatible {
     }
 
     @discardableResult
-    func doOutput(data: Data, locked: UnsafeMutablePointer<UInt32>? = nil) -> Int {
+    func doOutput(data: Data) -> Int {
         queueBytesOut.mutate { $0 = Int64(data.count) }
         outputQueue.async {
             let sendCompletion = NWConnection.SendCompletion.contentProcessed { error in
-                defer {
-                    if locked != nil {
-                        OSAtomicAnd32Barrier(0, locked!)
-                    }
-                }
                 guard self.connected else {
                     return
                 }
@@ -142,7 +154,7 @@ final class RTMPNWSocket: RTMPSocketCompatible {
     private func stateDidChange(to state: NWConnection.State) {
         switch state {
         case .ready:
-            timeoutHandler.cancel()
+            timeoutHandler?.cancel()
             connected = true
         case .failed:
             close(isDisconnected: true)

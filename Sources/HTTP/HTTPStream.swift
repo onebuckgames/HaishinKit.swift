@@ -11,6 +11,8 @@ open class HTTPStream: NetStream {
             tsWriter.expectedMedias = newValue
         }
     }
+
+    /// The name of stream.
     private(set) var name: String?
     private lazy var tsWriter = TSFileWriter()
 
@@ -18,40 +20,34 @@ open class HTTPStream: NetStream {
         lockQueue.async {
             if name == nil {
                 self.name = name
-                #if os(iOS)
-                self.mixer.videoIO.screen?.stopRunning()
-                #endif
                 self.mixer.stopEncoding()
                 self.tsWriter.stopRunning()
                 return
             }
             self.name = name
-            #if os(iOS)
-            self.mixer.videoIO.screen?.startRunning()
-            #endif
-            self.mixer.startEncoding(delegate: self.tsWriter)
+            self.mixer.startEncoding(self.tsWriter)
             self.mixer.startRunning()
             self.tsWriter.startRunning()
         }
     }
 
     #if os(iOS) || os(macOS)
-    override open func attachCamera(_ camera: AVCaptureDevice?, onError: ((NSError) -> Void)? = nil) {
-        if camera == nil {
+    override open func attachCamera(_ device: AVCaptureDevice?, onError: ((Error) -> Void)? = nil) {
+        if device == nil {
             tsWriter.expectedMedias.remove(.video)
         } else {
             tsWriter.expectedMedias.insert(.video)
         }
-        super.attachCamera(camera, onError: onError)
+        super.attachCamera(device, onError: onError)
     }
 
-    override open func attachAudio(_ audio: AVCaptureDevice?, automaticallyConfiguresApplicationAudioSession: Bool = true, onError: ((NSError) -> Void)? = nil) {
-        if audio == nil {
+    override open func attachAudio(_ device: AVCaptureDevice?, automaticallyConfiguresApplicationAudioSession: Bool = true, onError: ((Error) -> Void)? = nil) {
+        if device == nil {
             tsWriter.expectedMedias.remove(.audio)
         } else {
             tsWriter.expectedMedias.insert(.audio)
         }
-        super.attachAudio(audio, automaticallyConfiguresApplicationAudioSession: automaticallyConfiguresApplicationAudioSession, onError: onError)
+        super.attachAudio(device, automaticallyConfiguresApplicationAudioSession: automaticallyConfiguresApplicationAudioSession, onError: onError)
     }
     #endif
 

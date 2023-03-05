@@ -1,6 +1,7 @@
 import Foundation
 
 final class RTMPTSocket: NSObject, RTMPSocketCompatible {
+    static let defaultWindowSizeC = Int(UInt8.max)
     static let contentType: String = "application/x-fcs"
 
     var timeout: Int = 0
@@ -9,8 +10,9 @@ final class RTMPTSocket: NSObject, RTMPSocketCompatible {
     var inputBuffer = Data()
     var qualityOfService: DispatchQoS = .default
     var securityLevel: StreamSocketSecurityLevel = .none
+    var outputBufferSize: Int = RTMPTSocket.defaultWindowSizeC
     weak var delegate: RTMPSocketDelegate?
-    var connected: Bool = false {
+    var connected = false {
         didSet {
             if connected {
                 handshake.timestamp = Date().timeIntervalSince1970
@@ -59,12 +61,12 @@ final class RTMPTSocket: NSObject, RTMPSocketCompatible {
     private var handshake = RTMPHandshake()
     private let outputQueue = DispatchQueue(label: "com.haishinkit.HaishinKit.RTMPTSocket.output")
     private var connectionID: String?
-    private var isRequesting: Bool = false
+    private var isRequesting = false
     private var outputBuffer = Data()
     private var lastResponse = Date()
     private var lastRequestPathComponent: String?
     private var lastRequestData: Data?
-    private var isRetryingRequest: Bool = true
+    private var isRetryingRequest = true
 
     override init() {
         super.init()
@@ -85,22 +87,18 @@ final class RTMPTSocket: NSObject, RTMPSocketCompatible {
     }
 
     @discardableResult
-    func doOutput(chunk: RTMPChunk, locked: UnsafeMutablePointer<UInt32>? = nil) -> Int {
+    func doOutput(chunk: RTMPChunk) -> Int {
         var bytes: [UInt8] = []
         let chunks: [Data] = chunk.split(chunkSizeS)
         for chunk in chunks {
             bytes.append(contentsOf: chunk)
         }
-
         outputQueue.sync {
             self.outputBuffer.append(contentsOf: bytes)
             if !self.isRequesting {
                 self.doOutput(data: self.outputBuffer)
                 self.outputBuffer.removeAll()
             }
-        }
-        if locked != nil {
-            OSAtomicAnd32Barrier(0, locked!)
         }
         return bytes.count
     }
@@ -244,7 +242,6 @@ final class RTMPTSocket: NSObject, RTMPSocketCompatible {
             return
         }
         outputQueue.sync {
-            let index: Int64 = OSAtomicIncrement64(&self.index)
             doRequest("/idle/\(connectionID)/\(index)", Data([0x00]), didIdle)
         }
     }
@@ -266,7 +263,6 @@ final class RTMPTSocket: NSObject, RTMPSocketCompatible {
         guard let connectionID: String = connectionID, connected else {
             return 0
         }
-        let index: Int64 = OSAtomicIncrement64(&self.index)
         doRequest("/send/\(connectionID)/\(index)", c2packet + data, listen)
         c2packet.removeAll()
         return data.count

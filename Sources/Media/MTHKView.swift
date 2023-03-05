@@ -2,61 +2,85 @@ import AVFoundation
 import MetalKit
 
 /**
-  A view that displays a video content of a NetStream object which uses Metal api.
+ * A view that displays a video content of a NetStream object which uses Metal api.
  */
-open class MTHKView: MTKView, NetStreamRenderer {
-    open var isMirrored: Bool = false
-    /// A value that specifies how the video is displayed within a player layer’s bounds.
-    open var videoGravity: AVLayerVideoGravity = .resizeAspect
-    /// A value that displays a video format.
-    open var videoFormatDescription: CMVideoFormatDescription? {
+public class MTHKView: MTKView {
+    public var isMirrored = false
+    /// Specifies how the video is displayed within a player layer’s bounds.
+    public var videoGravity: AVLayerVideoGravity = .resizeAspect
+
+    public var videoFormatDescription: CMVideoFormatDescription? {
         currentStream?.mixer.videoIO.formatDescription
     }
 
     #if !os(tvOS)
-    var position: AVCaptureDevice.Position = .back
-    var orientation: AVCaptureVideoOrientation = .portrait
+    public var videoOrientation: AVCaptureVideoOrientation = .portrait
     #endif
 
-    var displayImage: CIImage?
-    let colorSpace: CGColorSpace = CGColorSpaceCreateDeviceRGB()
+    private var currentSampleBuffer: CMSampleBuffer?
+    private let colorSpace: CGColorSpace = CGColorSpaceCreateDeviceRGB()
+
+    private lazy var commandQueue: MTLCommandQueue? = {
+        return device?.makeCommandQueue()
+    }()
+
     private weak var currentStream: NetStream? {
         didSet {
-            oldValue?.mixer.videoIO.renderer = nil
+            oldValue?.mixer.videoIO.drawable = nil
             if let currentStream = currentStream {
                 currentStream.mixer.videoIO.context = CIContext(mtlDevice: device!)
                 currentStream.lockQueue.async {
-                    currentStream.mixer.videoIO.renderer = self
+                    currentStream.mixer.videoIO.drawable = self
                     currentStream.mixer.startRunning()
                 }
             }
         }
     }
 
+    /// Initializes and returns a newly allocated view object with the specified frame rectangle.
     public init(frame: CGRect) {
         super.init(frame: frame, device: MTLCreateSystemDefaultDevice())
         awakeFromNib()
     }
 
+    /// Returns an object initialized from data in a given unarchiver.
     public required init(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
         self.device = MTLCreateSystemDefaultDevice()
     }
 
+    /// Prepares the receiver for service after it has been loaded from an Interface Builder archive, or nib file.
     override open func awakeFromNib() {
         super.awakeFromNib()
         delegate = self
         framebufferOnly = false
         enableSetNeedsDisplay = true
     }
+}
 
-    /// Attaches a view to a new NetStream object.
-    open func attachStream(_ stream: NetStream?) {
+extension MTHKView: NetStreamDrawable {
+    // MARK: NetStreamDrawable
+    public func attachStream(_ stream: NetStream?) {
         if Thread.isMainThread {
             currentStream = stream
         } else {
             DispatchQueue.main.async {
                 self.currentStream = stream
+            }
+        }
+    }
+
+    public func enqueue(_ sampleBuffer: CMSampleBuffer?) {
+        if Thread.isMainThread {
+            currentSampleBuffer = sampleBuffer
+            #if os(macOS)
+            self.needsDisplay = true
+            #else
+            self.setNeedsDisplay()
+            #endif
+        } else {
+            DispatchQueue.main.async {
+                self.enqueue(sampleBuffer)
             }
         }
     }
@@ -70,7 +94,7 @@ extension MTHKView: MTKViewDelegate {
     public func draw(in view: MTKView) {
         guard
             let currentDrawable = currentDrawable,
-            let commandBuffer = device?.makeCommandQueue()?.makeCommandBuffer(),
+            let commandBuffer = commandQueue?.makeCommandBuffer(),
             let context = currentStream?.mixer.videoIO.context else {
             return
         }
@@ -79,11 +103,12 @@ extension MTHKView: MTKViewDelegate {
             let renderCommandEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: currentRenderPassDescriptor) {
             renderCommandEncoder.endEncoding()
         }
-        guard let displayImage = displayImage else {
+        guard let imageBuffer = currentSampleBuffer?.imageBuffer else {
             commandBuffer.present(currentDrawable)
             commandBuffer.commit()
             return
         }
+        let displayImage = CIImage(cvPixelBuffer: imageBuffer)
         var scaleX: CGFloat = 0
         var scaleY: CGFloat = 0
         var translationX: CGFloat = 0
@@ -109,16 +134,14 @@ extension MTHKView: MTKViewDelegate {
         }
         let bounds = CGRect(origin: .zero, size: drawableSize)
         var scaledImage: CIImage = displayImage
-            .transformed(by: CGAffineTransform(translationX: translationX, y: translationY))
-            .transformed(by: CGAffineTransform(scaleX: scaleX, y: scaleY))
 
         if isMirrored {
-            if #available(iOS 11.0, tvOS 11.0, macOS 10.13, *) {
-                scaledImage = scaledImage.oriented(.upMirrored)
-            } else {
-                scaledImage = scaledImage.oriented(forExifOrientation: 2)
-            }
+            scaledImage = scaledImage.oriented(.upMirrored)
         }
+
+        scaledImage = scaledImage
+            .transformed(by: CGAffineTransform(translationX: translationX, y: translationY))
+            .transformed(by: CGAffineTransform(scaleX: scaleX, y: scaleY))
 
         context.render(scaledImage, to: currentDrawable.texture, commandBuffer: commandBuffer, bounds: bounds, colorSpace: colorSpace)
         commandBuffer.present(currentDrawable)
