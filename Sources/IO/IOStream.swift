@@ -420,8 +420,7 @@ open class IOStream: NSObject {
             }
         case kCMMediaType_Video:
             mixer.videoIO.lockQueue.async {
-//                self.mixer.videoIO.append(sampleBuffer)
-                self.mixer.muxer?.append(sampleBuffer)
+                self.mixer.videoIO.append(sampleBuffer)
             }
         default:
             break
