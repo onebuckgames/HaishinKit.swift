@@ -167,12 +167,12 @@ final class IOVideoUnit: NSObject, IOUnit {
     }
 
     func append(_ sampleBuffer: CMSampleBuffer, channel: UInt8 = 0) {
-//        if sampleBuffer.formatDescription?.isCompressed == true {
-//            inputFormat = sampleBuffer.formatDescription
-//            codec.append(sampleBuffer)
-//        } else {
+        if sampleBuffer.formatDescription?.isCompressed == true {
+            inputFormat = sampleBuffer.formatDescription
+            codec.append(sampleBuffer)
+        } else {
             videoMixer.append(sampleBuffer, channel: channel, isVideoMirrored: false)
-//        }
+        }
     }
 
     #if os(iOS) || os(tvOS) || os(macOS)
