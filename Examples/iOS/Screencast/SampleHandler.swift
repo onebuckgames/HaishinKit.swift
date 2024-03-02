@@ -3,7 +3,7 @@ import Logboard
 import ReplayKit
 import VideoToolbox
 
-let logger = LBLogger.with("com.haishinkit.Exsample.iOS.Screencast")
+let logger = LBLogger.with(HaishinKitIdentifier)
 
 @available(iOS 10.0, *)
 open class SampleHandler: RPBroadcastSampleHandler {
@@ -27,14 +27,13 @@ open class SampleHandler: RPBroadcastSampleHandler {
 
     override open func broadcastStarted(withSetupInfo setupInfo: [String: NSObject]?) {
         /*
-         let logger = Logboard.with(HaishinKitIdentifier)
          let socket = SocketAppender()
-         socket.connect("192.168.11.15", port: 22222)
+         socket.connect("192.168.1.9", port: 22222)
          logger.level = .debug
          logger.appender = socket
+         logger.level = .debug
          */
-        logger.level = .debug
-        LBLogger.with(HaishinKitIdentifier).level = .trace
+        LBLogger.with(HaishinKitIdentifier).level = .info
         rtmpConnection.connect(Preference.defaultInstance.uri!, arguments: nil)
     }
 
@@ -43,21 +42,18 @@ open class SampleHandler: RPBroadcastSampleHandler {
         case .video:
             if let description = CMSampleBufferGetFormatDescription(sampleBuffer) {
                 let dimensions = CMVideoFormatDescriptionGetDimensions(description)
-                rtmpStream.videoSettings = [
-                    .width: dimensions.width,
-                    .height: dimensions.height,
-                    .profileLevel: kVTProfileLevel_H264_Baseline_AutoLevel
-                ]
+                rtmpStream.videoSettings.videoSize = .init(width: CGFloat(dimensions.width), height: CGFloat(dimensions.height))
+                rtmpStream.videoSettings.profileLevel = kVTProfileLevel_H264_Baseline_AutoLevel as String
             }
-            rtmpStream.appendSampleBuffer(sampleBuffer, withType: .video)
+            rtmpStream.append(sampleBuffer)
         case .audioMic:
             isMirophoneOn = true
             if CMSampleBufferDataIsReady(sampleBuffer) {
-                rtmpStream.appendSampleBuffer(sampleBuffer, withType: .audio)
+                rtmpStream.append(sampleBuffer)
             }
         case .audioApp:
             if !isMirophoneOn && CMSampleBufferDataIsReady(sampleBuffer) {
-                rtmpStream.appendSampleBuffer(sampleBuffer, withType: .audio)
+                rtmpStream.append(sampleBuffer)
             }
         @unknown default:
             break

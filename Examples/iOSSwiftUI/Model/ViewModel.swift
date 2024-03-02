@@ -17,8 +17,8 @@ final class ViewModel: ObservableObject {
     private var retryCount: Int = 0
     @Published var published = false
     @Published var zoomLevel: CGFloat = 1.0
-    @Published var videoRate: CGFloat = 160.0
-    @Published var audioRate: CGFloat = 32.0
+    @Published var videoRate = CGFloat(VideoCodecSettings.default.bitRate / 1000)
+    @Published var audioRate = CGFloat(AudioCodecSettings.default.bitRate / 1000)
     @Published var fps: String = "FPS"
     private var nc = NotificationCenter.default
 
@@ -65,12 +65,7 @@ final class ViewModel: ObservableObject {
             rtmpStream.videoOrientation = orientation
         }
         rtmpStream.sessionPreset = .hd1280x720
-        rtmpStream.videoSettings = [
-            .width: 720,
-            .height: 1280
-        ]
-        rtmpStream.mixer.recorder.delegate = self
-
+        rtmpStream.videoSettings.videoSize = .init(width: 1280, height: 720)
         nc.publisher(for: UIDevice.orientationDidChangeNotification, object: nil)
             .sink { [weak self] _ in
                 guard let orientation = DeviceUtil.videoOrientation(by: UIDevice.current.orientation), let self = self else {
@@ -195,11 +190,11 @@ final class ViewModel: ObservableObject {
     }
 
     func changeVideoRate(level: CGFloat) {
-        rtmpStream.videoSettings[.bitrate] = level * 1000
+        rtmpStream.videoSettings.bitRate = Int(level * 1000)
     }
 
     func changeAudioRate(level: CGFloat) {
-        rtmpStream.audioSettings[.bitrate] = level * 1000
+        rtmpStream.audioSettings.bitRate = Int(level * 1000)
     }
 
     @objc

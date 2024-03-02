@@ -5,16 +5,16 @@ import AVFoundation
  - seealso: http://wiki.multimedia.cx/index.php?title=MPEG-4_Audio#Audio_Specific_Config
  - seealso: http://wiki.multimedia.cx/?title=Understanding_AAC
  */
-struct AudioSpecificConfig {
-    static let ADTSHeaderSize: Int = 7
+struct AudioSpecificConfig: Equatable {
+    static let adtsHeaderSize: Int = 7
 
     enum AudioObjectType: UInt8 {
         case unknown = 0
         case aacMain = 1
-        case aaclc = 2
-        case aacssr = 3
-        case aacltp = 4
-        case aacsbr = 5
+        case aacLc = 2
+        case aacSsr = 3
+        case aacLtp = 4
+        case aacSbr = 5
         case aacScalable = 6
         case twinqVQ = 7
         case celp = 8
@@ -25,13 +25,13 @@ struct AudioSpecificConfig {
             case .aac_Main:
                 self = .aacMain
             case .AAC_LC:
-                self = .aaclc
+                self = .aacLc
             case .AAC_SSR:
-                self = .aacssr
+                self = .aacSsr
             case .AAC_LTP:
-                self = .aacltp
+                self = .aacLtp
             case .AAC_SBR:
-                self = .aacsbr
+                self = .aacSbr
             case .aac_Scalable:
                 self = .aacScalable
             case .twinVQ:
@@ -174,7 +174,7 @@ struct AudioSpecificConfig {
         channel = ChannelConfiguration(rawValue: UInt8(asbd.mChannelsPerFrame))!
     }
 
-    func adts(_ length: Int) -> [UInt8] {
+    func makeHeader(_ length: Int) -> [UInt8] {
         let size = 7
         let fullSize: Int = size + length
         var adts = [UInt8](repeating: 0x00, count: size)
@@ -188,7 +188,12 @@ struct AudioSpecificConfig {
         return adts
     }
 
-    func audioStreamBasicDescription() -> AudioStreamBasicDescription {
+    func makeAudioFormat() -> AVAudioFormat? {
+        var audioStreamBasicDescription = makeAudioStreamBasicDescription()
+        return AVAudioFormat(streamDescription: &audioStreamBasicDescription)
+    }
+
+    private func makeAudioStreamBasicDescription() -> AudioStreamBasicDescription {
         AudioStreamBasicDescription(
             mSampleRate: frequency.sampleRate,
             mFormatID: kAudioFormatMPEG4AAC,

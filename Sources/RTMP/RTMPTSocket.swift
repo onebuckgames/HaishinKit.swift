@@ -8,10 +8,10 @@ final class RTMPTSocket: NSObject, RTMPSocketCompatible {
     var chunkSizeC: Int = RTMPChunk.defaultSize
     var chunkSizeS: Int = RTMPChunk.defaultSize
     var inputBuffer = Data()
-    var qualityOfService: DispatchQoS = .default
+    var qualityOfService: DispatchQoS = .userInitiated
     var securityLevel: StreamSocketSecurityLevel = .none
     var outputBufferSize: Int = RTMPTSocket.defaultWindowSizeC
-    weak var delegate: RTMPSocketDelegate?
+    weak var delegate: (any RTMPSocketDelegate)?
     var connected = false {
         didSet {
             if connected {
@@ -35,7 +35,7 @@ final class RTMPTSocket: NSObject, RTMPSocketCompatible {
 
     var readyState: RTMPSocketReadyState = .uninitialized {
         didSet {
-            delegate?.didSetReadyState(readyState)
+            delegate?.socket(self, readyState: readyState)
         }
     }
 
@@ -119,14 +119,14 @@ final class RTMPTSocket: NSObject, RTMPSocketCompatible {
         doRequest("/close/\(connectionID)", Data(), didClose)
     }
 
-    private func listen(data: Data?, response: URLResponse?, error: Error?) {
+    private func listen(data: Data?, response: URLResponse?, error: (any Error)?) {
         lastResponse = Date()
 
         if logger.isEnabledFor(level: .trace) {
             logger.trace("\(String(describing: data)): \(String(describing: response)): \(String(describing: error))")
         }
 
-        if let error: Error = error {
+        if let error {
             logger.error("\(error)")
 
             if let lastRequestPathComponent: String = self.lastRequestPathComponent,
@@ -187,14 +187,14 @@ final class RTMPTSocket: NSObject, RTMPSocketCompatible {
             }
             let data: Data = inputBuffer
             inputBuffer.removeAll()
-            delegate?.listen(data)
+            delegate?.socket(self, data: data)
         default:
             break
         }
     }
 
-    private func didIdent2(data: Data?, response: URLResponse?, error: Error?) {
-        if let error: Error = error {
+    private func didIdent2(data: Data?, response: URLResponse?, error: (any Error)?) {
+        if let error {
             logger.error("\(error)")
         }
         doRequest("/open/1", Data([0x00]), didOpen)
@@ -203,8 +203,8 @@ final class RTMPTSocket: NSObject, RTMPSocketCompatible {
         }
     }
 
-    private func didOpen(data: Data?, response: URLResponse?, error: Error?) {
-        if let error: Error = error {
+    private func didOpen(data: Data?, response: URLResponse?, error: (any Error)?) {
+        if let error {
             logger.error("\(error)")
         }
         guard let data: Data = data else {
@@ -217,8 +217,8 @@ final class RTMPTSocket: NSObject, RTMPSocketCompatible {
         }
     }
 
-    private func didIdle0(data: Data?, response: URLResponse?, error: Error?) {
-        if let error: Error = error {
+    private func didIdle0(data: Data?, response: URLResponse?, error: (any Error)?) {
+        if let error {
             logger.error("\(error)")
         }
         connected = true
@@ -227,8 +227,8 @@ final class RTMPTSocket: NSObject, RTMPSocketCompatible {
         }
     }
 
-    private func didClose(data: Data?, response: URLResponse?, error: Error?) {
-        if let error: Error = error {
+    private func didClose(data: Data?, response: URLResponse?, error: (any Error)?) {
+        if let error {
             logger.error("\(error)")
         }
         connected = false
@@ -246,7 +246,7 @@ final class RTMPTSocket: NSObject, RTMPSocketCompatible {
         }
     }
 
-    private func didIdle(data: Data?, response: URLResponse?, error: Error?) {
+    private func didIdle(data: Data?, response: URLResponse?, error: (any Error)?) {
         listen(data: data, response: response, error: error)
     }
 
@@ -268,7 +268,7 @@ final class RTMPTSocket: NSObject, RTMPSocketCompatible {
         return data.count
     }
 
-    private func doRequest(_ pathComponent: String, _ data: Data, _ completionHandler: @escaping ((Data?, URLResponse?, Error?) -> Void)) {
+    private func doRequest(_ pathComponent: String, _ data: Data, _ completionHandler: @escaping ((Data?, URLResponse?, (any Error)?) -> Void)) {
         isRequesting = true
         lastRequestPathComponent = pathComponent
         lastRequestData = data

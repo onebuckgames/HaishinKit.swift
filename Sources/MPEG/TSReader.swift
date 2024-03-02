@@ -1,96 +1,147 @@
+import AVFoundation
 import Foundation
+import Logboard
 
-protocol TSReaderDelegate: AnyObject {
-    func reader(_ reader: TSReader, didReadPacketizedElementaryStream data: ElementaryStreamSpecificData, PES: PacketizedElementaryStream)
+/// The interface an MPEG-2 TS (Transport Stream) reader uses to inform its delegates.
+public protocol TSReaderDelegate: AnyObject {
+    func reader(_ reader: TSReader, id: UInt16, didRead formatDescription: CMFormatDescription)
+    func reader(_ reader: TSReader, id: UInt16, didRead sampleBuffer: CMSampleBuffer)
 }
 
-// MARK: -
-class TSReader {
-    weak var delegate: TSReaderDelegate?
+/// The TSReader class represents read MPEG-2 transport stream data.
+public class TSReader {
+    /// Specifies the delegate object.
+    public weak var delegate: (any TSReaderDelegate)?
 
-    private(set) var PAT: ProgramAssociationSpecific? {
+    private var pat: TSProgramAssociation? {
         didSet {
-            guard let PAT: ProgramAssociationSpecific = PAT else {
+            guard let PAT = pat else {
                 return
             }
             for (channel, PID) in PAT.programs {
-                dictionaryForPrograms[PID] = channel
+                programs[PID] = channel
+            }
+            if logger.isEnabledFor(level: .trace) {
+                logger.trace(programs)
             }
         }
     }
-    private(set) var PMT: [UInt16: ProgramMapSpecific] = [:] {
+    private var pmt: [UInt16: TSProgramMap] = [:] {
         didSet {
-            for (_, pmt) in PMT {
+            for (_, pmt) in pmt {
                 for data in pmt.elementaryStreamSpecificData {
-                    dictionaryForESSpecData[data.elementaryPID] = data
+                    esSpecData[data.elementaryPID] = data
                 }
             }
+            if logger.isEnabledFor(level: .trace) {
+                logger.trace(esSpecData)
+            }
         }
     }
-    private(set) var numberOfPackets: Int = 0
-
-    private var eof: UInt64 = 0
-    private var cursor: Int = 0
-    private var fileHandle: FileHandle?
-    private var dictionaryForPrograms: [UInt16: UInt16] = [:]
-    private var dictionaryForESSpecData: [UInt16: ElementaryStreamSpecificData] = [:]
+    private var nalUnitReader = AVCNALUnitReader()
+    private var programs: [UInt16: UInt16] = [:]
+    private var esSpecData: [UInt16: ESSpecificData] = [:]
+    private var formatDescriptions: [UInt16: CMFormatDescription] = [:]
     private var packetizedElementaryStreams: [UInt16: PacketizedElementaryStream] = [:]
+    private var previousPresentationTimeStamps: [UInt16: CMTime] = [:]
 
-    init(url: URL) throws {
-        fileHandle = try FileHandle(forReadingFrom: url)
-        eof = fileHandle!.seekToEndOfFile()
+    /// Create a  new TSReader instance.
+    public init() {
     }
 
-    func read() {
-        while let packet: TSPacket = next() {
-            numberOfPackets += 1
-            if packet.PID == 0x0000 {
-                PAT = ProgramAssociationSpecific(packet.payload)
+    /// Reads transport-stream data.
+    public func read(_ data: Data) -> Int {
+        let count = data.count / TSPacket.size
+        for i in 0..<count {
+            guard let packet = TSPacket(data: data.subdata(in: i * TSPacket.size..<(i + 1) * TSPacket.size)) else {
                 continue
             }
-            if let channel: UInt16 = dictionaryForPrograms[packet.PID] {
-                PMT[channel] = ProgramMapSpecific(packet.payload)
+            if packet.pid == 0x0000 {
+                pat = TSProgramAssociation(packet.payload)
                 continue
             }
-            if let data: ElementaryStreamSpecificData = dictionaryForESSpecData[packet.PID] {
-                readPacketizedElementaryStream(data, packet: packet)
+            if let channel = programs[packet.pid] {
+                pmt[channel] = TSProgramMap(packet.payload)
+                continue
             }
+            readPacketizedElementaryStream(packet)
         }
+        return count * TSPacket.size
     }
 
-    func readPacketizedElementaryStream(_ data: ElementaryStreamSpecificData, packet: TSPacket) {
+    /// Clears the reader object for new transport stream.
+    public func clear() {
+        pat = nil
+        pmt.removeAll()
+        programs.removeAll()
+        esSpecData.removeAll()
+        formatDescriptions.removeAll()
+        packetizedElementaryStreams.removeAll()
+        previousPresentationTimeStamps.removeAll()
+    }
+
+    private func readPacketizedElementaryStream(_ packet: TSPacket) {
         if packet.payloadUnitStartIndicator {
-            if let PES: PacketizedElementaryStream = packetizedElementaryStreams[packet.PID] {
-                delegate?.reader(self, didReadPacketizedElementaryStream: data, PES: PES)
+            if let sampleBuffer = makeSampleBuffer(packet.pid, forUpdate: true) {
+                delegate?.reader(self, id: packet.pid, didRead: sampleBuffer)
             }
-            packetizedElementaryStreams[packet.PID] = PacketizedElementaryStream(packet.payload)
+            packetizedElementaryStreams[packet.pid] = PacketizedElementaryStream(packet.payload)
             return
         }
-        _ = packetizedElementaryStreams[packet.PID]?.append(packet.payload)
+        _ = packetizedElementaryStreams[packet.pid]?.append(packet.payload)
+        if let sampleBuffer = makeSampleBuffer(packet.pid) {
+            delegate?.reader(self, id: packet.pid, didRead: sampleBuffer)
+        }
     }
 
-    func close() {
-        fileHandle?.closeFile()
-    }
-}
-
-extension TSReader: IteratorProtocol {
-    // MARK: IteratorProtocol
-    func next() -> TSPacket? {
-        guard let fileHandle = fileHandle, UInt64(cursor * TSPacket.size) < eof else {
+    private func makeSampleBuffer(_ id: UInt16, forUpdate: Bool = false) -> CMSampleBuffer? {
+        guard
+            let data = esSpecData[id],
+            var pes = packetizedElementaryStreams[id], pes.isEntired || forUpdate else {
             return nil
         }
         defer {
-            cursor += 1
+            packetizedElementaryStreams[id] = nil
         }
-        fileHandle.seek(toFileOffset: UInt64(cursor * TSPacket.size))
-        return TSPacket(data: fileHandle.readData(ofLength: TSPacket.size))
+        if formatDescriptions[id] == nil {
+            formatDescriptions[id] = makeFormatDescription(data, pes: pes)
+            if let formatDescription = formatDescriptions[id] {
+                delegate?.reader(self, id: id, didRead: formatDescription)
+            }
+        }
+        var isNotSync = true
+        switch data.streamType {
+        case .h264:
+            let units = nalUnitReader.read(pes.data)
+            if let unit = units.first(where: { $0.type == .idr || $0.type == .slice }) {
+                var data = Data([0x00, 0x00, 0x00, 0x01])
+                data.append(unit.data)
+                pes.data = data
+            }
+            isNotSync = !units.contains { $0.type == .idr }
+        case .adtsAac:
+            isNotSync = false
+        default:
+            break
+        }
+        let sampleBuffer = pes.makeSampleBuffer(
+            data.streamType,
+            previousPresentationTimeStamp: previousPresentationTimeStamps[id] ?? .invalid,
+            formatDescription: formatDescriptions[id]
+        )
+        sampleBuffer?.isNotSync = isNotSync
+        previousPresentationTimeStamps[id] = sampleBuffer?.presentationTimeStamp
+        return sampleBuffer
     }
-}
 
-extension TSReader: CustomDebugStringConvertible {
-    // MARK: CustomDebugStringConvertible
-    var debugDescription: String {
-        Mirror(reflecting: self).debugDescription
+    private func makeFormatDescription(_ data: ESSpecificData, pes: PacketizedElementaryStream) -> CMFormatDescription? {
+        switch data.streamType {
+        case .adtsAac:
+            return ADTSHeader(data: pes.data).makeFormatDescription()
+        case .h264:
+            return nalUnitReader.makeFormatDescription(pes.data)
+        default:
+            return nil
+        }
     }
 }

@@ -1,7 +1,7 @@
 import AVFoundation
 
 /// The type of flv supports audio codecs.
-public enum FLVAudioCodec: UInt8 {
+enum FLVAudioCodec: UInt8 {
     /// The PCM codec.
     case pcm = 0
     /// The ADPCM codec.
@@ -75,18 +75,23 @@ public enum FLVAudioCodec: UInt8 {
         }
     }
 
-    func audioStreamBasicDescription(_ rate: FLVSoundRate, size: FLVSoundSize, type: FLVSoundType) -> AudioStreamBasicDescription? {
-        guard isSupported else {
+    func audioStreamBasicDescription(_ payload: inout Data) -> AudioStreamBasicDescription? {
+        guard isSupported, !payload.isEmpty else {
+            return nil
+        }
+        guard
+            let soundRate = FLVSoundRate(rawValue: (payload[0] & 0b00001100) >> 2),
+            let soundType = FLVSoundType(rawValue: (payload[0] & 0b00000001)) else {
             return nil
         }
         return AudioStreamBasicDescription(
-            mSampleRate: rate.floatValue,
+            mSampleRate: soundRate.floatValue,
             mFormatID: formatID,
             mFormatFlags: formatFlags,
             mBytesPerPacket: 0,
             mFramesPerPacket: 1024,
             mBytesPerFrame: 0,
-            mChannelsPerFrame: type == .stereo ? 2 : 1,
+            mChannelsPerFrame: soundType == .stereo ? 2 : 1,
             mBitsPerChannel: 0,
             mReserved: 0
         )

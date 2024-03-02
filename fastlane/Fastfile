@@ -16,6 +16,19 @@
 desc "[CI] Review PullRequest."
 lane :review do
   spm
-  carthage(use_xcframeworks: true) if Helper.is_ci?
+  carthage(
+    use_xcframeworks: true,
+    platform: 'iOS'
+  ) if Helper.is_ci?
+  danger(
+    danger_id: 'danger',
+    dangerfile: 'Dangerfile',
+    verbose: true
+  )
   scan(scheme: 'Tests')
+end
+
+desc "Creates documents."
+lane :document do
+  sh('cd ../ && sourcekitten doc --spm --module-name HaishinKit > HaishinKit.json && sourcekitten doc --spm --module-name SRTHaishinKit > SRTHaishinKit.json && jazzy --sourcekitten-sourcefile HaishinKit.json,SRTHaishinKit.json')
 end

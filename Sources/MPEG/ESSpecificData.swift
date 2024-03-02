@@ -1,6 +1,8 @@
+import CoreMedia
 import Foundation
 
-enum ElementaryStreamType: UInt8 {
+enum ESStreamType: UInt8 {
+    case unspecific = 0x00
     case mpeg1Video = 0x01
     case mpeg2Video = 0x02
     case mpeg1Audio = 0x03
@@ -8,21 +10,29 @@ enum ElementaryStreamType: UInt8 {
     case mpeg2TabledData = 0x05
     case mpeg2PacketizedData = 0x06
 
-    case adtsaac = 0x0F
+    case adtsAac = 0x0F
     case h263 = 0x10
 
     case h264 = 0x1B
     case h265 = 0x24
+
+    var headerSize: Int {
+        switch self {
+        case .adtsAac:
+            return 7
+        default:
+            return 0
+        }
+    }
 }
 
-
-struct ElementaryStreamSpecificData {
+struct ESSpecificData {
     static let fixedHeaderSize: Int = 5
 
-    var streamType: UInt8 = 0
+    var streamType: ESStreamType = .unspecific
     var elementaryPID: UInt16 = 0
-    var ESInfoLength: UInt16 = 0
-    var ESDescriptors = Data()
+    var esInfoLength: UInt16 = 0
+    var esDescriptors = Data()
 
     init() {
     }
@@ -32,24 +42,24 @@ struct ElementaryStreamSpecificData {
     }
 }
 
-extension ElementaryStreamSpecificData: DataConvertible {
+extension ESSpecificData: DataConvertible {
     // MARK: DataConvertible
     var data: Data {
         get {
             ByteArray()
-                .writeUInt8(streamType)
+                .writeUInt8(streamType.rawValue)
                 .writeUInt16(elementaryPID | 0xe000)
-                .writeUInt16(ESInfoLength | 0xf000)
-                .writeBytes(ESDescriptors)
+                .writeUInt16(esInfoLength | 0xf000)
+                .writeBytes(esDescriptors)
                 .data
         }
         set {
             let buffer = ByteArray(data: newValue)
             do {
-                streamType = try buffer.readUInt8()
+                streamType = ESStreamType(rawValue: try buffer.readUInt8()) ?? .unspecific
                 elementaryPID = try buffer.readUInt16() & 0x0fff
-                ESInfoLength = try buffer.readUInt16() & 0x01ff
-                ESDescriptors = try buffer.readBytes(Int(ESInfoLength))
+                esInfoLength = try buffer.readUInt16() & 0x01ff
+                esDescriptors = try buffer.readBytes(Int(esInfoLength))
             } catch {
                 logger.error("\(buffer)")
             }
@@ -57,7 +67,7 @@ extension ElementaryStreamSpecificData: DataConvertible {
     }
 }
 
-extension ElementaryStreamSpecificData: CustomDebugStringConvertible {
+extension ESSpecificData: CustomDebugStringConvertible {
     // MARK: CustomDebugStringConvertible
     var debugDescription: String {
         Mirror(reflecting: self).debugDescription

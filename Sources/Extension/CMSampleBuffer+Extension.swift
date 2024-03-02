@@ -1,5 +1,8 @@
 import Accelerate
+import AVFoundation
 import CoreMedia
+
+// swiftlint:disable discouraged_optional_boolean
 
 extension CMSampleBuffer {
     var isNotSync: Bool {
@@ -74,12 +77,12 @@ extension CMSampleBuffer {
         CMSampleBufferGetPresentationTimeStamp(self)
     }
 
-    func muted(_ muted: Bool) -> CMSampleBuffer? {
+    func muted(_ muted: Bool) -> CMSampleBuffer {
         guard muted else {
             return self
         }
         guard let dataBuffer = dataBuffer else {
-            return nil
+            return self
         }
         let status = CMBlockBufferFillDataBytes(
             with: 0,
@@ -88,12 +91,11 @@ extension CMSampleBuffer {
             dataLength: dataBuffer.dataLength
         )
         guard status == noErr else {
-            return nil
+            return self
         }
         return self
     }
 
-    // swiftlint:disable discouraged_optional_boolean
     @inline(__always)
     private func getAttachmentValue(for key: CFString) -> Bool? {
         guard
@@ -118,3 +120,5 @@ extension CMSampleBuffer {
         )
     }
 }
+
+// swiftlint:enable discouraged_optional_boolean

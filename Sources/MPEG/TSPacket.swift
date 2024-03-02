@@ -11,7 +11,7 @@ struct TSPacket {
     var transportErrorIndicator = false
     var payloadUnitStartIndicator = false
     var transportPriority = false
-    var PID: UInt16 = 0
+    var pid: UInt16 = 0
     var scramblingControl: UInt8 = 0
     var adaptationFieldFlag = false
     var payloadFlag = false
@@ -74,8 +74,8 @@ extension TSPacket: DataConvertible {
             bytes[1] |= transportErrorIndicator ? 0x80 : 0
             bytes[1] |= payloadUnitStartIndicator ? 0x40 : 0
             bytes[1] |= transportPriority ? 0x20 : 0
-            bytes[1] |= UInt8(PID >> 8)
-            bytes[2] |= UInt8(PID & 0x00FF)
+            bytes[1] |= UInt8(pid >> 8)
+            bytes[2] |= UInt8(pid & 0x00FF)
             bytes[3] |= scramblingControl << 6
             bytes[3] |= adaptationFieldFlag ? 0x20 : 0
             bytes[3] |= payloadFlag ? 0x10 : 0
@@ -94,7 +94,7 @@ extension TSPacket: DataConvertible {
                 transportErrorIndicator = (data[1] & 0x80) == 0x80
                 payloadUnitStartIndicator = (data[1] & 0x40) == 0x40
                 transportPriority = (data[1] & 0x20) == 0x20
-                PID = UInt16(data[1] & 0x1f) << 8 | UInt16(data[2])
+                pid = UInt16(data[1] & 0x1f) << 8 | UInt16(data[2])
                 scramblingControl = UInt8(data[3] & 0xc0)
                 adaptationFieldFlag = (data[3] & 0x20) == 0x20
                 payloadFlag = (data[3] & 0x10) == 0x10
@@ -124,19 +124,20 @@ extension TSPacket: CustomDebugStringConvertible {
 // MARK: -
 enum TSTimestamp {
     static let resolution: Double = 90 * 1000 // 90kHz
-    static let PTSMask: UInt8 = 0x10
-    static let PTSDTSMask: UInt8 = 0x30
+    static let dataSize: Int = 5
+    static let ptsMask: UInt8 = 0x10
+    static let ptsDtsMask: UInt8 = 0x30
 
-    static func decode(_ data: Data) -> UInt64 {
-        var result: UInt64 = 0
-        result |= UInt64(data[0] & 0x0e) << 29
-        result |= UInt64(data[1]) << 22 | UInt64(data[2] & 0xfe) << 14
-        result |= UInt64(data[3]) << 7 | UInt64(data[3] & 0xfe) << 1
+    static func decode(_ data: Data, offset: Int = 0) -> Int64 {
+        var result: Int64 = 0
+        result |= Int64(data[offset + 0] & 0x0e) << 29
+        result |= Int64(data[offset + 1]) << 22 | Int64(data[offset + 2] & 0xfe) << 14
+        result |= Int64(data[offset + 3]) << 7 | Int64(data[offset + 3] & 0xfe) << 1
         return result
     }
 
-    static func encode(_ b: UInt64, _ m: UInt8) -> Data {
-        var data = Data(count: 5)
+    static func encode(_ b: Int64, _ m: UInt8) -> Data {
+        var data = Data(count: dataSize)
         data[0] = UInt8(truncatingIfNeeded: b >> 29) | 0x01 | m
         data[1] = UInt8(truncatingIfNeeded: b >> 22)
         data[2] = UInt8(truncatingIfNeeded: b >> 14) | 0x01

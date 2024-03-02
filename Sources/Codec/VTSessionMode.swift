@@ -5,17 +5,17 @@ enum VTSessionMode {
     case compression
     case decompression
 
-    func makeSession(_ videoCodec: VideoCodec) -> VTSessionConvertible? {
+    func makeSession<T>(_ videoCodec: VideoCodec<T>) -> (any VTSessionConvertible)? {
         switch self {
         case .compression:
             var session: VTCompressionSession?
             var status = VTCompressionSessionCreate(
                 allocator: kCFAllocatorDefault,
-                width: videoCodec.width,
-                height: videoCodec.height,
-                codecType: kCMVideoCodecType_H264,
+                width: Int32(videoCodec.settings.videoSize.width),
+                height: Int32(videoCodec.settings.videoSize.height),
+                codecType: videoCodec.settings.format.codecType,
                 encoderSpecification: nil,
-                imageBufferAttributes: videoCodec.attributes as CFDictionary?,
+                imageBufferAttributes: videoCodec.imageBufferAttributes(.compression) as CFDictionary?,
                 compressedDataAllocator: nil,
                 outputCallback: nil,
                 refcon: nil,
@@ -25,7 +25,7 @@ enum VTSessionMode {
                 videoCodec.delegate?.videoCodec(videoCodec, errorOccurred: .failedToCreate(status: status))
                 return nil
             }
-            status = session.setOptions(videoCodec.options())
+            status = session.setOptions(videoCodec.settings.options(videoCodec))
             guard status == noErr else {
                 videoCodec.delegate?.videoCodec(videoCodec, errorOccurred: .failedToPrepare(status: status))
                 return nil
@@ -35,21 +35,19 @@ enum VTSessionMode {
                 videoCodec.delegate?.videoCodec(videoCodec, errorOccurred: .failedToPrepare(status: status))
                 return nil
             }
+            videoCodec.frameInterval = videoCodec.settings.frameInterval
             return session
         case .decompression:
-            guard let formatDescription = videoCodec.formatDescription else {
+            guard let formatDescription = videoCodec.inputFormat else {
                 videoCodec.delegate?.videoCodec(videoCodec, errorOccurred: .failedToCreate(status: kVTParameterErr))
                 return nil
             }
-            var attributes = videoCodec.attributes
-            attributes?.removeValue(forKey: kCVPixelBufferWidthKey)
-            attributes?.removeValue(forKey: kCVPixelBufferHeightKey)
             var session: VTDecompressionSession?
             let status = VTDecompressionSessionCreate(
                 allocator: kCFAllocatorDefault,
                 formatDescription: formatDescription,
                 decoderSpecification: nil,
-                imageBufferAttributes: attributes as CFDictionary?,
+                imageBufferAttributes: videoCodec.imageBufferAttributes(.decompression) as CFDictionary?,
                 outputCallback: nil,
                 decompressionSessionOut: &session
             )

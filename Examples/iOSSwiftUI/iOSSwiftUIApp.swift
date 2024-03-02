@@ -8,6 +8,7 @@ let logger = LBLogger.with("com.haishinkit.HaishinKit.iOSSwiftUI")
 // swiftlint:disable type_name
 @main
 struct iOSSwiftUIApp: App {
+    // swiftlint:disable:next attributes
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
     var body: some Scene {
@@ -22,7 +23,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         // Logboard.with(HaishinKitIdentifier).level = .trace
         let session = AVAudioSession.sharedInstance()
         do {
-            try session.setCategory(.playAndRecord, mode: .voiceChat, options: [.defaultToSpeaker, .allowBluetooth])
+            try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetooth])
             try session.setActive(true)
         } catch {
             logger.error(error)
@@ -30,3 +31,5 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         return true
     }
 }
+
+// swiftlint:enable type_name
