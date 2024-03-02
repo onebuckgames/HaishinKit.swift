@@ -535,7 +535,7 @@ open class RTMPStream: IOStream {
         }
         videoWasSent = true
         info.byteCount.mutate { $0 += Int64(length) }
-        audioTimestamp = videoTimestamp = withTimestamp + (videoTimestamp - floor(videoTimestamp))
+        audioTimestamp = videoTimestamp = (withTimestamp + (videoTimestamp - floor(videoTimestamp))) as Double
         frameCount += 1
     }
 
