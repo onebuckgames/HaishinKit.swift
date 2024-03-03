@@ -91,14 +91,13 @@ public class IOVideoCaptureUnit: IOCaptureUnit {
     }
 
     /// Specifies the preferredVideoStabilizationMode most appropriate for use with the connection.
-    @available(macOS, unavailable)
-    public var preferredVideoStabilizationMode: AVCaptureVideoStabilizationMode = .off {
-        didSet {
-            output.connections.filter { $0.isVideoStabilizationSupported }.forEach {
-                $0.preferredVideoStabilizationMode = preferredVideoStabilizationMode
-            }
-        }
-    }
+//    public var preferredVideoStabilizationMode: AVCaptureVideoStabilizationMode = .off {
+//        didSet {
+//            output.connections.filter { $0.isVideoStabilizationSupported }.forEach {
+//                $0.preferredVideoStabilizationMode = preferredVideoStabilizationMode
+//            }
+//        }
+//    }
 
     init(_ device: AVCaptureDevice?, videoSettings: [NSObject: AnyObject] = IOVideoCaptureUnit.defaultVideoSettings) throws {
         guard let device else {
