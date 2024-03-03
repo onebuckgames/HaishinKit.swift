@@ -103,7 +103,7 @@ extension IOMixer: VideoCodecDelegate {
 
     func videoCodec(_ codec: VideoCodec<IOMixer>, didOutput sampleBuffer: CMSampleBuffer) {
         if sampleBuffer.formatDescription?.isCompressed == false {
-            delegate?.mixer(self, didOutput: sampleBuffer)
+//            delegate?.mixer(self, didOutput: sampleBuffer)
         }
         muxer?.append(sampleBuffer)
     }
