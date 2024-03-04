@@ -175,6 +175,11 @@ extension RTMPMuxer: IOMuxer {
         guard let formatDescription = sampleBuffer.formatDescription, let data = sampleBuffer.dataBuffer?.data, 0 <= delta else {
             return
         }
+        
+        if (nil == videoFormat) {
+            videoFormat = formatDescription
+        }
+        
         switch CMFormatDescriptionGetMediaSubType(formatDescription) {
         case kCMVideoCodecType_H264:
             var buffer = Data([((keyframe ? FLVFrameType.key.rawValue : FLVFrameType.inter.rawValue) << 4) | FLVVideoCodec.avc.rawValue, FLVAVCPacketType.nal.rawValue])
