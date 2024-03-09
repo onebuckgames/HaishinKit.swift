@@ -163,7 +163,7 @@ extension RTMPMuxer: IOMuxer {
         
         for i in 0..<sampleBuffer.numSamples {
             let decodeTimeStamp = sampleBuffer.decodeTimeStamp.isValid ? sampleBuffer.decodeTimeStamp : presentationTimeStamp
-            let delta = audioTimeStampA == .zero ? 0 : (decodeTimeStamp.seconds - audioTimeStampA.seconds) * 1000
+            let delta = (CMTimeCompare(audioTimeStampA, .zero) == 0) ? 0 : (decodeTimeStamp.seconds - audioTimeStampA.seconds) * 1000
 
             guard 0 <= delta else {
                 return
@@ -204,7 +204,7 @@ extension RTMPMuxer: IOMuxer {
         let keyframe = !sampleBuffer.isNotSync
         let decodeTimeStamp = sampleBuffer.decodeTimeStamp.isValid ? sampleBuffer.decodeTimeStamp : sampleBuffer.presentationTimeStamp
         let compositionTime = getCompositionTime(sampleBuffer)
-        let delta = videoTimeStamp == .zero ? 0 : (decodeTimeStamp.seconds - videoTimeStamp.seconds) * 1000
+        let delta = (CMTimeCompare(videoTimeStamp, .zero) == 0) ? 0 : (decodeTimeStamp.seconds - videoTimeStamp.seconds) * 1000
         guard let formatDescription = sampleBuffer.formatDescription, let data = sampleBuffer.dataBuffer?.data, 0 <= delta else {
             return
         }
