@@ -571,9 +571,7 @@ open class RTMPStream: IOStream {
                 let inputFormat = AVAudioFormat(cmAudioFormatDescription: sampleBuffer.formatDescription!)
                 
                 for i in 0..<sampleBuffer.numSamples {
-                    guard let buffer = AVAudioCompressedBuffer(format: inputFormat, packetCapacity: 1, maximumPacketSize: 1024) else {
-                        continue
-                    }
+                    let buffer = AVAudioCompressedBuffer(format: inputFormat, packetCapacity: 1, maximumPacketSize: 1024)
                     let sampleSize = CMSampleBufferGetSampleSize(sampleBuffer, at: i)
                     let byteCount = sampleSize - ADTSHeader.size
                     buffer.packetDescriptions?.pointee = AudioStreamPacketDescription(mStartOffset: 0, mVariableFramesInPacket: 0, mDataByteSize: UInt32(byteCount))
