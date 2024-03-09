@@ -61,6 +61,7 @@ final class RTMPMuxer {
 
     var isRunning: Atomic<Bool> = .init(false)
     private var videoTimeStamp: CMTime = .zero
+    private var audioTimeStampA: CMTime = .zero
     private var audioBuffer: AVAudioCompressedBuffer?
     private var audioTimeStamp: AVAudioTime = .init(hostTime: 0)
     private let compositiionTimeOffset: CMTime = .init(value: 3, timescale: 30)
@@ -158,12 +159,15 @@ extension RTMPMuxer: IOMuxer {
         }
         
         var presentationTimeStamp = sampleBuffer.presentationTimeStamp
-        let when = presentationTimeStamp.makeAudioTime()
-        print("when: ", audioTimeStamp.hostTime)
+//        let when = presentationTimeStamp.makeAudioTime()
+        print("when: ", presentationTimeStamp)
         
         for i in 0..<sampleBuffer.numSamples {
-            let delta = audioTimeStamp.hostTime == 0 ? 0 :
-                (AVAudioTime.seconds(forHostTime: when.hostTime) - AVAudioTime.seconds(forHostTime: audioTimeStamp.hostTime)) * 1000
+            let decodeTimeStamp = sampleBuffer.decodeTimeStamp.isValid ? sampleBuffer.decodeTimeStamp : presentationTimeStamp
+            let delta = audioTimeStampA == .zero ? 0 : (decodeTimeStamp.seconds - audioTimeStampA.seconds) * 1000
+            
+//            let delta = audioTimeStamp.hostTime == 0 ? 0 :
+//                (AVAudioTime.seconds(forHostTime: when.hostTime) - AVAudioTime.seconds(forHostTime: audioTimeStamp.hostTime)) * 1000
             guard 0 <= delta else {
                 return
             }
@@ -177,10 +181,11 @@ extension RTMPMuxer: IOMuxer {
                     stream?.outputAudio(buffer, withTimestamp: delta)
                     print("Delta: ", delta)
                     
-                    presentationTimeStamp = CMTimeAdd(presentationTimeStamp, CMTime(value: CMTimeValue(1024), timescale: sampleBuffer.presentationTimeStamp.timescale))
+//                    presentationTimeStamp = CMTimeAdd(presentationTimeStamp, CMTime(value: CMTimeValue(1024), timescale: sampleBuffer.presentationTimeStamp.timescale))
                     
-                    audioTimeStamp = presentationTimeStamp.makeAudioTime()
-                    print("audioTimeStamp: ", audioTimeStamp.hostTime)
+//                    audioTimeStamp = presentationTimeStamp.makeAudioTime()
+                    audioTimeStampA = decodeTimeStamp
+                    print("audioTimeStamp: ", audioTimeStampA)
                 }
             }
             
