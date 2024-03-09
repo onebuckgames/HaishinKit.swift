@@ -159,49 +159,30 @@ extension RTMPMuxer: IOMuxer {
         }
         
         var presentationTimeStamp = sampleBuffer.presentationTimeStamp
-//        let when = presentationTimeStamp.makeAudioTime()
         print("when: ", presentationTimeStamp)
         
         for i in 0..<sampleBuffer.numSamples {
             let decodeTimeStamp = sampleBuffer.decodeTimeStamp.isValid ? sampleBuffer.decodeTimeStamp : presentationTimeStamp
             let delta = audioTimeStampA == .zero ? 0 : (decodeTimeStamp.seconds - audioTimeStampA.seconds) * 1000
-            
-//            let delta = audioTimeStamp.hostTime == 0 ? 0 :
-//                (AVAudioTime.seconds(forHostTime: when.hostTime) - AVAudioTime.seconds(forHostTime: audioTimeStamp.hostTime)) * 1000
+
             guard 0 <= delta else {
                 return
             }
             
             if let blockBuffer = sampleBuffer.dataBuffer {
-                var buffer = Data([RTMPMuxer.aac, FLVAACPacketType.raw.rawValue])
+//                var buffer = Data([RTMPMuxer.aac, FLVAACPacketType.raw.rawValue])
+                var buffer = Data()
                 
                 if let blockData = blockBuffer.data {
                     buffer.append(blockData)
                     
                     stream?.outputAudio(buffer, withTimestamp: delta)
                     print("Delta: ", delta)
-                    
-//                    presentationTimeStamp = CMTimeAdd(presentationTimeStamp, CMTime(value: CMTimeValue(1024), timescale: sampleBuffer.presentationTimeStamp.timescale))
-                    
-//                    audioTimeStamp = presentationTimeStamp.makeAudioTime()
+
                     audioTimeStampA = decodeTimeStamp
                     print("audioTimeStamp: ", audioTimeStampA)
                 }
             }
-            
-
-//            let buffer = AVAudioCompressedBuffer(format: inputFormat, packetCapacity: 1, maximumPacketSize: 1024)
-//            let sampleSize = CMSampleBufferGetSampleSize(sampleBuffer, at: i)
-//            let byteCount = sampleSize - ADTSHeader.size
-//            buffer.packetDescriptions?.pointee = AudioStreamPacketDescription(mStartOffset: 0, mVariableFramesInPacket: 0, mDataByteSize: UInt32(byteCount))
-//            buffer.packetCount = 1
-//            buffer.byteLength = UInt32(byteCount)
-//            if let blockBuffer = sampleBuffer.dataBuffer {
-//                CMBlockBufferCopyDataBytes(blockBuffer, atOffset: offset + ADTSHeader.size, dataLength: byteCount, destination: buffer.data)
-//                self.muxer.append(buffer, when:presentationTimeStamp.makeAudioTime())
-//                presentationTimeStamp = CMTimeAdd(presentationTimeStamp, CMTime(value: CMTimeValue(1024), timescale: sampleBuffer.presentationTimeStamp.timescale))
-//                offset += sampleSize
-//            }
         }
     }
 
