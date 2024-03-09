@@ -566,28 +566,29 @@ open class RTMPStream: IOStream {
         switch sampleBuffer.formatDescription?._mediaType {
         case kCMMediaType_Audio:
             self.lockQueue.async {
-                var offset = 0
-                var presentationTimeStamp = sampleBuffer.presentationTimeStamp
-                let inputFormat = AVAudioFormat(cmAudioFormatDescription: sampleBuffer.formatDescription!)
-                
-                for i in 0..<sampleBuffer.numSamples {
-                    let buffer = AVAudioCompressedBuffer(format: inputFormat, packetCapacity: 1, maximumPacketSize: 1024)
-                    let sampleSize = CMSampleBufferGetSampleSize(sampleBuffer, at: i)
-                    let byteCount = sampleSize
-                    buffer.packetDescriptions?.pointee = AudioStreamPacketDescription(mStartOffset: 0, mVariableFramesInPacket: 0, mDataByteSize: UInt32(byteCount))
-                    buffer.packetCount = 1
-                    buffer.byteLength = UInt32(byteCount)
-                    if let blockBuffer = sampleBuffer.dataBuffer {
-                        CMBlockBufferCopyDataBytes(blockBuffer, atOffset: offset, dataLength: byteCount, destination: buffer.data)
-                        self.muxer.append(buffer, when:presentationTimeStamp.makeAudioTime())
-                        presentationTimeStamp = CMTimeAdd(presentationTimeStamp, CMTime(value: CMTimeValue(1024), timescale: sampleBuffer.presentationTimeStamp.timescale))
-                        offset += sampleSize
-                    }
-                }
+                self.muxer.append(audioSample: sampleBuffer)
+//                var offset = 0
+//                var presentationTimeStamp = sampleBuffer.presentationTimeStamp
+//                let inputFormat = AVAudioFormat(cmAudioFormatDescription: sampleBuffer.formatDescription!)
+//                
+//                for i in 0..<sampleBuffer.numSamples {
+//                    let buffer = AVAudioCompressedBuffer(format: inputFormat, packetCapacity: 1, maximumPacketSize: 1024)
+//                    let sampleSize = CMSampleBufferGetSampleSize(sampleBuffer, at: i)
+//                    let byteCount = sampleSize - ADTSHeader.size
+//                    buffer.packetDescriptions?.pointee = AudioStreamPacketDescription(mStartOffset: 0, mVariableFramesInPacket: 0, mDataByteSize: UInt32(byteCount))
+//                    buffer.packetCount = 1
+//                    buffer.byteLength = UInt32(byteCount)
+//                    if let blockBuffer = sampleBuffer.dataBuffer {
+//                        CMBlockBufferCopyDataBytes(blockBuffer, atOffset: offset + ADTSHeader.size, dataLength: byteCount, destination: buffer.data)
+//                        self.muxer.append(buffer, when:presentationTimeStamp.makeAudioTime())
+//                        presentationTimeStamp = CMTimeAdd(presentationTimeStamp, CMTime(value: CMTimeValue(1024), timescale: sampleBuffer.presentationTimeStamp.timescale))
+//                        offset += sampleSize
+//                    }
+//                }
             }
         case kCMMediaType_Video:
             self.lockQueue.async {
-                self.muxer.append(sampleBuffer)
+                self.muxer.append(sampleBuffer: sampleBuffer)
             }
         default:
             break
