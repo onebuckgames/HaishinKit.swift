@@ -152,6 +152,46 @@ final class RTMPMuxer {
 
 extension RTMPMuxer: IOMuxer {
     // MARK: IOMuxer
+    func append(_ audioSample: CMSampleBuffer) {
+        for i in 0..<sampleBuffer.numSamples {
+            let when = audioSample.presentationTimeStamp.makeAudioTime()
+            let delta = audioTimeStamp.hostTime == 0 ? 0 :
+                (AVAudioTime.seconds(forHostTime: when.hostTime) - AVAudioTime.seconds(forHostTime: audioTimeStamp.hostTime)) * 1000
+            guard 0 <= delta else {
+                return
+            }
+            
+            var offset = 0
+
+            if let blockBuffer = sampleBuffer.dataBuffer {
+                var buffer = Data([RTMPMuxer.aac, FLVAACPacketType.raw.rawValue])
+                
+                CMBlockBufferCopyDataBytes(blockBuffer, atOffset: offset, dataLength: byteCount, destination: buffer.data)
+                
+                stream?.outputAudio(buffer, withTimestamp: delta)
+                
+                presentationTimeStamp = CMTimeAdd(presentationTimeStamp, CMTime(value: CMTimeValue(1024), timescale: sampleBuffer.presentationTimeStamp.timescale))
+                offset += sampleSize
+                
+                audioTimeStamp = when
+            }
+            
+
+//            let buffer = AVAudioCompressedBuffer(format: inputFormat, packetCapacity: 1, maximumPacketSize: 1024)
+//            let sampleSize = CMSampleBufferGetSampleSize(sampleBuffer, at: i)
+//            let byteCount = sampleSize - ADTSHeader.size
+//            buffer.packetDescriptions?.pointee = AudioStreamPacketDescription(mStartOffset: 0, mVariableFramesInPacket: 0, mDataByteSize: UInt32(byteCount))
+//            buffer.packetCount = 1
+//            buffer.byteLength = UInt32(byteCount)
+//            if let blockBuffer = sampleBuffer.dataBuffer {
+//                CMBlockBufferCopyDataBytes(blockBuffer, atOffset: offset + ADTSHeader.size, dataLength: byteCount, destination: buffer.data)
+//                self.muxer.append(buffer, when:presentationTimeStamp.makeAudioTime())
+//                presentationTimeStamp = CMTimeAdd(presentationTimeStamp, CMTime(value: CMTimeValue(1024), timescale: sampleBuffer.presentationTimeStamp.timescale))
+//                offset += sampleSize
+//            }
+        }
+    }
+
     func append(_ audioBuffer: AVAudioBuffer, when: AVAudioTime) {
         guard let audioBuffer = audioBuffer as? AVAudioCompressedBuffer else {
             return
