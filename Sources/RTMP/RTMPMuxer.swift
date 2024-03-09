@@ -175,7 +175,7 @@ extension RTMPMuxer: IOMuxer {
                 if let blockData = blockBuffer.data {
                     buffer.append(blockData)
                 
-                    delta = delta * audioFormat?.sampleRate
+                    delta = delta * audioFormat!.sampleRate
                     stream?.outputAudio(buffer, withTimestamp: delta)
                     print("Delta: ", delta)
 
