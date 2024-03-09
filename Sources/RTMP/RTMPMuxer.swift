@@ -158,10 +158,10 @@ extension RTMPMuxer: IOMuxer {
         }
         
         var presentationTimeStamp = sampleBuffer.presentationTimeStamp
-        var offset = 0
+        let when = presentationTimeStamp.makeAudioTime()
+        print("when: ", audioTimeStamp.hostTime)
         
         for i in 0..<sampleBuffer.numSamples {
-            let when = sampleBuffer.presentationTimeStamp.makeAudioTime()
             let delta = audioTimeStamp.hostTime == 0 ? 0 :
                 (AVAudioTime.seconds(forHostTime: when.hostTime) - AVAudioTime.seconds(forHostTime: audioTimeStamp.hostTime)) * 1000
             guard 0 <= delta else {
@@ -170,17 +170,17 @@ extension RTMPMuxer: IOMuxer {
             
             if let blockBuffer = sampleBuffer.dataBuffer {
                 var buffer = Data([RTMPMuxer.aac, FLVAACPacketType.raw.rawValue])
-                let sampleSize = CMSampleBufferGetSampleSize(sampleBuffer, at: i)
                 
                 if let blockData = blockBuffer.data {
                     buffer.append(blockData)
                     
                     stream?.outputAudio(buffer, withTimestamp: delta)
+                    print("Delta: ", delta)
                     
                     presentationTimeStamp = CMTimeAdd(presentationTimeStamp, CMTime(value: CMTimeValue(1024), timescale: sampleBuffer.presentationTimeStamp.timescale))
-                    offset += sampleSize
                     
                     audioTimeStamp = presentationTimeStamp.makeAudioTime()
+                    print("audioTimeStamp: ", audioTimeStamp.hostTime)
                 }
             }
             
