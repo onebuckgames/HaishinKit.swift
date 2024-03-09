@@ -152,9 +152,9 @@ final class RTMPMuxer {
 
 extension RTMPMuxer: IOMuxer {
     // MARK: IOMuxer
-    func append(_ audioSample: CMSampleBuffer) {
+    func appendAudio(_ sampleBuffer: CMSampleBuffer) {
         for i in 0..<sampleBuffer.numSamples {
-            let when = audioSample.presentationTimeStamp.makeAudioTime()
+            let when = sampleBuffer.presentationTimeStamp.makeAudioTime()
             let delta = audioTimeStamp.hostTime == 0 ? 0 :
                 (AVAudioTime.seconds(forHostTime: when.hostTime) - AVAudioTime.seconds(forHostTime: audioTimeStamp.hostTime)) * 1000
             guard 0 <= delta else {

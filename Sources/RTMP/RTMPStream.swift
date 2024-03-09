@@ -566,7 +566,7 @@ open class RTMPStream: IOStream {
         switch sampleBuffer.formatDescription?._mediaType {
         case kCMMediaType_Audio:
             self.lockQueue.async {
-                self.muxer.append(audioSample: sampleBuffer)
+                self.muxer.appendAudio(sampleBuffer)
 //                var offset = 0
 //                var presentationTimeStamp = sampleBuffer.presentationTimeStamp
 //                let inputFormat = AVAudioFormat(cmAudioFormatDescription: sampleBuffer.formatDescription!)
@@ -588,7 +588,7 @@ open class RTMPStream: IOStream {
             }
         case kCMMediaType_Video:
             self.lockQueue.async {
-                self.muxer.append(sampleBuffer: sampleBuffer)
+                self.muxer.append(sampleBuffer)
             }
         default:
             break
