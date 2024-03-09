@@ -176,7 +176,7 @@ extension RTMPMuxer: IOMuxer {
                     presentationTimeStamp = CMTimeAdd(presentationTimeStamp, CMTime(value: CMTimeValue(1024), timescale: sampleBuffer.presentationTimeStamp.timescale))
                     offset += sampleSize
                     
-                    audioTimeStamp = when
+                    audioTimeStamp = presentationTimeStamp.makeAudioTime()
                 }
             }
             
