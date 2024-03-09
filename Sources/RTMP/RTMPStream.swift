@@ -568,7 +568,7 @@ open class RTMPStream: IOStream {
             self.lockQueue.async {
                 var offset = 0
                 var presentationTimeStamp = sampleBuffer.presentationTimeStamp
-                let inputFormat = AVAudioFormat(cmAudioFormatDescription: sampleBuffer.formatDescription)
+                let inputFormat = AVAudioFormat(cmAudioFormatDescription: sampleBuffer.formatDescription!)
                 
                 for i in 0..<sampleBuffer.numSamples {
                     guard let buffer = AVAudioCompressedBuffer(format: inputFormat, packetCapacity: 1, maximumPacketSize: 1024) else {
