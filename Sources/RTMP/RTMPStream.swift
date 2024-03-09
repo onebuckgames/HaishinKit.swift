@@ -559,6 +559,40 @@ open class RTMPStream: IOStream {
             break
         }
     }
+    
+    /// Append a CMSampleBuffer.
+    /// - Warning: This method can't use attachCamera or attachAudio method at the same time.
+    override public func append(_ sampleBuffer: CMSampleBuffer) {
+        switch sampleBuffer.formatDescription?._mediaType {
+        case kCMMediaType_Audio:
+            self.lockQueue.async {
+                var offset = 0
+                var presentationTimeStamp = sampleBuffer.presentationTimeStamp
+                for i in 0..<sampleBuffer.numSamples {
+                    guard let buffer = AVAudioCompressedBuffer(format: inputFormat, packetCapacity: 1, maximumPacketSize: 1024) else {
+                        continue
+                    }
+                    let sampleSize = CMSampleBufferGetSampleSize(sampleBuffer, at: i)
+                    let byteCount = sampleSize - ADTSHeader.size
+                    buffer.packetDescriptions?.pointee = AudioStreamPacketDescription(mStartOffset: 0, mVariableFramesInPacket: 0, mDataByteSize: UInt32(byteCount))
+                    buffer.packetCount = 1
+                    buffer.byteLength = UInt32(byteCount)
+                    if let blockBuffer = sampleBuffer.dataBuffer {
+                        CMBlockBufferCopyDataBytes(blockBuffer, atOffset: offset + ADTSHeader.size, dataLength: byteCount, destination: buffer.data)
+                        self.muxer.append(audioBuffer, when:presentationTimeStamp.makeAudioTime())
+                        presentationTimeStamp = CMTimeAdd(presentationTimeStamp, CMTime(value: CMTimeValue(1024), timescale: sampleBuffer.presentationTimeStamp.timescale))
+                        offset += sampleSize
+                    }
+                }
+            }
+        case kCMMediaType_Video:
+            self.lockQueue.async {
+                self.muxer?.append(sampleBuffer)
+            }
+        default:
+            break
+        }
+    }
 }
 
 extension RTMPStream {
