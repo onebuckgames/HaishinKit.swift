@@ -178,7 +178,7 @@ extension RTMPMuxer: IOMuxer {
                     stream?.outputAudio(buffer, withTimestamp: delta)
                     print("Delta: ", delta)
 
-                    audioTimeStampA = decodeTimeStamp
+                    audioTimeStampA = CMTime(value: decodeTimeStamp.value, timescale: decodeTimeStamp.timescale)
                     print("audioTimeStamp: ", audioTimeStampA)
                 }
             }
