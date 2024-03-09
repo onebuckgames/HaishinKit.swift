@@ -154,7 +154,7 @@ extension RTMPMuxer: IOMuxer {
     // MARK: IOMuxer
     func appendAudio(_ sampleBuffer: CMSampleBuffer) {
         if (nil == audioFormat) {
-            audioFormat = nil
+            audioFormat = AVAudioFormat(cmAudioFormatDescription: sampleBuffer.formatDescription!)
         }
         
         var presentationTimeStamp = sampleBuffer.presentationTimeStamp
