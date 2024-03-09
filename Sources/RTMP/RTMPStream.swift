@@ -568,6 +568,8 @@ open class RTMPStream: IOStream {
             self.lockQueue.async {
                 var offset = 0
                 var presentationTimeStamp = sampleBuffer.presentationTimeStamp
+                let inputFormat = sampleBuffer.formatDescription
+                
                 for i in 0..<sampleBuffer.numSamples {
                     guard let buffer = AVAudioCompressedBuffer(format: inputFormat, packetCapacity: 1, maximumPacketSize: 1024) else {
                         continue
@@ -579,7 +581,7 @@ open class RTMPStream: IOStream {
                     buffer.byteLength = UInt32(byteCount)
                     if let blockBuffer = sampleBuffer.dataBuffer {
                         CMBlockBufferCopyDataBytes(blockBuffer, atOffset: offset + ADTSHeader.size, dataLength: byteCount, destination: buffer.data)
-                        self.muxer.append(audioBuffer, when:presentationTimeStamp.makeAudioTime())
+                        self.muxer.append(buffer, when:presentationTimeStamp.makeAudioTime())
                         presentationTimeStamp = CMTimeAdd(presentationTimeStamp, CMTime(value: CMTimeValue(1024), timescale: sampleBuffer.presentationTimeStamp.timescale))
                         offset += sampleSize
                     }
@@ -587,7 +589,7 @@ open class RTMPStream: IOStream {
             }
         case kCMMediaType_Video:
             self.lockQueue.async {
-                self.muxer?.append(sampleBuffer)
+                self.muxer.append(sampleBuffer)
             }
         default:
             break
