@@ -169,7 +169,7 @@ extension RTMPMuxer: IOMuxer {
             }
             
             if let blockBuffer = sampleBuffer.dataBuffer {
-                var buffer = Data([RTMPMuxer.aac, FLVAACPacketType.raw.rawValue])
+                var buffer = Data([RTMPMuxer.aac, FLVAACPacketType.seq.rawValue])
                 let sampleSize = CMSampleBufferGetSampleSize(sampleBuffer, at: i)
                 
                 if let blockData = blockBuffer.data {
