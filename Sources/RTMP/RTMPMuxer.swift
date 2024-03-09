@@ -246,6 +246,7 @@ extension RTMPMuxer: Running {
         }
         audioTimeStamp = .init(hostTime: 0)
         videoTimeStamp = .zero
+        audioTimeStampA = .zero
         audioFormat = nil
         videoFormat = nil
         isRunning.mutate { $0 = true }
