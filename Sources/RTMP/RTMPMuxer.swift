@@ -170,8 +170,6 @@ extension RTMPMuxer: IOMuxer {
             }
             
             if let blockBuffer = sampleBuffer.dataBuffer {
-                CFRetain(blockBuffer)
-                
                 var buffer = Data([RTMPMuxer.aac, FLVAACPacketType.raw.rawValue])
                 
                 if let blockData = blockBuffer.data {
@@ -183,8 +181,6 @@ extension RTMPMuxer: IOMuxer {
                     audioTimeStampA = CMTime(value: decodeTimeStamp.value, timescale: decodeTimeStamp.timescale)
                     print("audioTimeStamp: ", audioTimeStampA)
                 }
-                
-                CFRelease(blockBuffer)
             }
         }
     }
