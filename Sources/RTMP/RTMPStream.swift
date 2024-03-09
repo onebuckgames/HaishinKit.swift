@@ -407,10 +407,10 @@ open class RTMPStream: IOStream {
             metadata["videodatarate"] = videoSettings.bitRate / 1000
 //        }
 //        if audioInputFormat == nil {
-            metadata["audiocodecid"] = FLVAudioCodec.aac.rawValue
-            metadata["audiodatarate"] = audioSettings.bitRate / 1000
+//            metadata["audiocodecid"] = FLVAudioCodec.aac.rawValue
+//            metadata["audiodatarate"] = audioSettings.bitRate / 1000
 //            if let outputFormat = mixer.audioIO.outputFormat {
-            metadata["audiosamplerate"] = audioSettings.sampleRate
+//            metadata["audiosamplerate"] = audioSettings.sampleRate
 //            }
 //        }
         return metadata
