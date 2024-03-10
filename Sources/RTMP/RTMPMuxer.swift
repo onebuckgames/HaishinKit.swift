@@ -163,7 +163,7 @@ extension RTMPMuxer: IOMuxer {
 
         let decodeTimeStamp = sampleBuffer.decodeTimeStamp.isValid ? sampleBuffer.decodeTimeStamp : presentationTimeStamp
 //        var delta = (CMTimeCompare(audioTimeStampA, .zero) == 0) ? 0 : (decodeTimeStamp.seconds - audioTimeStampA.seconds) * 1000
-        var delta = 0
+        var delta: Double = 0
         if (CMTimeCompare(audioTimeStampA, .zero) != 0) {
             delta = Double(presentationTimeStamp.value) * 44100.0 / Double(presentationTimeStamp.timescale)
         }
