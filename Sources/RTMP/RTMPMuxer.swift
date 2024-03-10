@@ -159,7 +159,7 @@ extension RTMPMuxer: IOMuxer {
         }
         
         var presentationTimeStamp = sampleBuffer.presentationTimeStamp
-        print("when: ", presentationTimeStamp)
+//        print("when: ", presentationTimeStamp)
 
         let decodeTimeStamp = sampleBuffer.decodeTimeStamp.isValid ? sampleBuffer.decodeTimeStamp : presentationTimeStamp
         var delta = (CMTimeCompare(audioTimeStampA, .zero) == 0) ? 0 : (decodeTimeStamp.seconds - audioTimeStampA.seconds) * 1000
@@ -175,10 +175,10 @@ extension RTMPMuxer: IOMuxer {
                 buffer.append(blockData)
             
                 stream?.outputAudio(buffer, withTimestamp: delta)
-                print("Delta: ", delta)
+//                print("Delta: ", delta)
 
                 audioTimeStampA = CMTime(value: decodeTimeStamp.value, timescale: decodeTimeStamp.timescale)
-                print("audioTimeStamp: ", audioTimeStampA)
+//                print("audioTimeStamp: ", audioTimeStampA)
             }
         }
     }
