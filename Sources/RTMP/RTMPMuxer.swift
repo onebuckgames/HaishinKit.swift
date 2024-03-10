@@ -165,7 +165,7 @@ extension RTMPMuxer: IOMuxer {
 //        var delta = (CMTimeCompare(audioTimeStampA, .zero) == 0) ? 0 : (decodeTimeStamp.seconds - audioTimeStampA.seconds) * 1000
         var delta = 0
         if (CMTimeCompare(audioTimeStampA, .zero) != 0) {
-            delta = Double(presentationTimeStamp.value * 44100.0 / presentationTimeStamp.timescale)
+            delta = Double(presentationTimeStamp.value) * 44100.0 / Double(presentationTimeStamp.timescale)
         }
 
         guard 0 <= delta else {
