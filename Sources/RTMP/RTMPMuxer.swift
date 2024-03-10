@@ -153,20 +153,14 @@ final class RTMPMuxer {
 
 extension RTMPMuxer: IOMuxer {
     // MARK: IOMuxer
+    
     func appendAudio(_ sampleBuffer: CMSampleBuffer) {
         if (nil == audioFormat) {
             audioFormat = AVAudioFormat(cmAudioFormatDescription: sampleBuffer.formatDescription!)
         }
         
-        var presentationTimeStamp = sampleBuffer.presentationTimeStamp
-//        print("when: ", presentationTimeStamp)
-
-        let decodeTimeStamp = sampleBuffer.decodeTimeStamp.isValid ? sampleBuffer.decodeTimeStamp : presentationTimeStamp
-//        var delta = (CMTimeCompare(audioTimeStampA, .zero) == 0) ? 0 : (decodeTimeStamp.seconds - audioTimeStampA.seconds) * 1000
-        var delta: Double = 0
-        if (CMTimeCompare(audioTimeStampA, .zero) != 0) {
-            delta = Double(decodeTimeStamp.value - audioTimeStampA.value) * 44100.0 / Double(decodeTimeStamp.timescale)
-        }
+        let delta = audioTimeStamp.hostTime == 0 ? 0 :
+            (AVAudioTime.seconds(forHostTime: when.hostTime) - AVAudioTime.seconds(forHostTime: audioTimeStamp.hostTime)) * 1000
 
         guard 0 <= delta else {
             return
@@ -180,11 +174,10 @@ extension RTMPMuxer: IOMuxer {
             
                 stream?.outputAudio(buffer, withTimestamp: delta)
 //                print("Delta: ", delta)
-
-                audioTimeStampA = CMTime(value: decodeTimeStamp.value, timescale: decodeTimeStamp.timescale)
-//                print("audioTimeStamp: ", audioTimeStampA)
             }
         }
+        
+        audioTimeStamp = AVAudioTime.init(hostTime: AVAudioTime.hostTime(forSeconds: sampleBuffer.presentationTimeStamp.seconds), sampleTime: sampleBuffer.presentationTimeStamp.value, atRate: audioFormat.sampleRate)
     }
 
     func append(_ audioBuffer: AVAudioBuffer, when: AVAudioTime) {
