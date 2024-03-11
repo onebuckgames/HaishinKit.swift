@@ -12,7 +12,7 @@ final class RTMPMuxer {
                     return
                 }
                 
-                let audioConfig = AudioSpecificConfig(type: AudioSpecificConfig.AudioObjectType.aacLc, frequency: AudioSpecificConfig.SamplingFrequency.hz44100, channel: AudioSpecificConfig.ChannelConfiguration.frontLeftAndFrontRight)
+                let audioConfig = AudioSpecificConfig(type: AudioSpecificConfig.AudioObjectType.aacLc, frequency: AudioSpecificConfig.SamplingFrequency(sampleRate: audioFormat.sampleRate), channel: AudioSpecificConfig.ChannelConfiguration.frontLeftAndFrontRight)
                 
                 var buffer = Data([RTMPMuxer.aac, FLVAACPacketType.seq.rawValue])
                 buffer.append(contentsOf: audioConfig.bytes)
