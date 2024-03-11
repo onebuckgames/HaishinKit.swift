@@ -157,7 +157,7 @@ extension RTMPMuxer: IOMuxer {
         if (nil == audioFormat) {
             audioFormat = AVAudioFormat(cmAudioFormatDescription: sampleBuffer.formatDescription!)
         }
-        let compositionTime = getCompositionTime(sampleBuffer)
+        
         let when = AVAudioTime.init(hostTime: AVAudioTime.hostTime(forSeconds: sampleBuffer.presentationTimeStamp.seconds), sampleTime: sampleBuffer.presentationTimeStamp.value, atRate: audioFormat!.sampleRate)
         
         let delta = audioTimeStamp.hostTime == 0 ? 0 :
@@ -169,7 +169,6 @@ extension RTMPMuxer: IOMuxer {
         
         if let blockBuffer = sampleBuffer.dataBuffer {
             var buffer = Data([RTMPMuxer.aac, FLVAACPacketType.raw.rawValue])
-            buffer.append(contentsOf: compositionTime.bigEndian.data[1..<4])
             
             if let blockData = blockBuffer.data {
                 buffer.append(blockData)
