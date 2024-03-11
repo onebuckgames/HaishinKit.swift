@@ -11,7 +11,7 @@ final class RTMPMuxer {
                 guard let audioFormat else {
                     return
                 }
-                var buffer = Data([RTMPMuxer.aac, FLVAACPacketType.seq.rawValue])
+                var buffer = Data([RTMPMuxer.aac, FLVAACPacketType.raw.rawValue])
                 buffer.append(contentsOf: AudioSpecificConfig(formatDescription: audioFormat.formatDescription).bytes)
                 stream?.outputAudio(buffer, withTimestamp: 0)
             case .playing:
