@@ -168,7 +168,10 @@ extension RTMPMuxer: IOMuxer {
         }
         
         if let blockBuffer = sampleBuffer.dataBuffer, let blockData = blockBuffer.data {
-            var buffer = Data([RTMPMuxer.aac, FLVAACPacketType.raw.rawValue])
+//            var buffer = Data([RTMPMuxer.aac, FLVAACPacketType.raw.rawValue])
+            static let aac: UInt8 = 0xAF
+            static let raw: UInt8 = 0x01
+            var buffer = Data([aac, raw])
             buffer.append(blockData)
         
             stream?.outputAudio(buffer, withTimestamp: delta)
