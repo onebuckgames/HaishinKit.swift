@@ -64,7 +64,6 @@ final class RTMPMuxer {
     private var audioBuffer: AVAudioCompressedBuffer?
     private var audioTimeStamp: AVAudioTime = .init(hostTime: 0)
     private let compositiionTimeOffset: CMTime = .init(value: 3, timescale: 30)
-    private let compositiionTimeOffsetAudio: CMTime = .init(value: 3, timescale: 30)
     private weak var stream: RTMPStream?
 
     init(_ stream: RTMPStream) {
@@ -158,8 +157,7 @@ extension RTMPMuxer: IOMuxer {
         if (nil == audioFormat) {
             audioFormat = AVAudioFormat(cmAudioFormatDescription: sampleBuffer.formatDescription!)
         }
-        
-        let compositionTime = getAudioCompositionTime(sampleBuffer)
+        let compositionTime = getCompositionTime(sampleBuffer)
         let when = AVAudioTime.init(hostTime: AVAudioTime.hostTime(forSeconds: sampleBuffer.presentationTimeStamp.seconds), sampleTime: sampleBuffer.presentationTimeStamp.value, atRate: audioFormat!.sampleRate)
         
         let delta = audioTimeStamp.hostTime == 0 ? 0 :
@@ -233,13 +231,6 @@ extension RTMPMuxer: IOMuxer {
             return 0
         }
         return Int32((sampleBuffer.presentationTimeStamp - videoTimeStamp + compositiionTimeOffset).seconds * 1000)
-    }
-    
-    private func getAudioCompositionTime(_ sampleBuffer: CMSampleBuffer) -> Int32 {
-        guard sampleBuffer.decodeTimeStamp.isValid, sampleBuffer.decodeTimeStamp != sampleBuffer.presentationTimeStamp else {
-            return 0
-        }
-        return Int32((sampleBuffer.presentationTimeStamp - audioTimeStamp + compositiionTimeOffsetAudio).seconds * 1000)
     }
 }
 
