@@ -3,6 +3,10 @@ import AVFoundation
 // MARK: -
 final class RTMPMuxer {
     static let aac: UInt8 = FLVAudioCodec.aac.rawValue << 4 | FLVSoundRate.kHz44.rawValue << 2 | FLVSoundSize.snd16bit.rawValue << 1 | FLVSoundType.stereo.rawValue
+    
+    /// The lockQueue.
+    public let lockAudioQueue: DispatchQueue = .init(label: "com.haishinkit.HaishinKit.RTMPMuxer.Audio.lock", qos: .userInitiated)
+    public let lockVideoQueue: DispatchQueue = .init(label: "com.haishinkit.HaishinKit.RTMPMuxer.Video.lock", qos: .userInitiated)
 
     var audioFormat: AVAudioFormat? {
         didSet {
