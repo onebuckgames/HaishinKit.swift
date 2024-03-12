@@ -70,7 +70,7 @@ final class RTMPMuxer {
     private var videoTimeStamp: CMTime = .zero
     private var audioBuffer: AVAudioCompressedBuffer?
     private var audioTimeStamp: AVAudioTime = .init(hostTime: 0)
-    private let compositiionTimeOffset: CMTime = .init(value: 1, timescale: 30)
+    private let compositiionTimeOffset: CMTime = .init(value: 3, timescale: 30)
     private weak var stream: RTMPStream?
 
     init(_ stream: RTMPStream) {
