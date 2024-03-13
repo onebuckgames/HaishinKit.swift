@@ -463,16 +463,24 @@ open class RTMPStream: IOStream {
             startedAt = .init()
             videoWasSent = false
             audioWasSent = false
-            dataTimeStamps.removeAll()
+//            dataTimeStamps.removeAll()
             FCPublish()
         case .publishing:
-            let metadata = makeMetaData()
-            send(handlerName: "@setDataFrame", arguments: "onMetaData", metadata)
-            self.metadata = metadata
+            self.metadata = sendMetadata()
         default:
             break
         }
         super.readyStateDidChange(to: readyState)
+    }
+    
+    @discardableResult
+    public func sendMetadata() -> ASObject {
+        lockQueue.async {
+            self.dataTimeStamps.removeAll()
+        }
+        let metadata = makeMetaData()
+        send(handlerName: "@setDataFrame", arguments: "onMetaData", metadata)
+        return metadata
     }
 
     func close(withLockQueue: Bool) {
