@@ -40,6 +40,8 @@ public final class IORecorder {
         ]
     ]
 
+    public var fileUrl: URL?
+    
     /// Specifies the delegate.
     public weak var delegate: (any IORecorderDelegate)?
     /// Specifies the recorder settings.
@@ -71,6 +73,10 @@ public final class IORecorder {
     }()
     #endif
 
+    public init() {
+        
+    }
+    
     /// Append a sample buffer for recording.
     public func append(_ sampleBuffer: CMSampleBuffer) {
         guard isRunning.value else {
@@ -254,9 +260,10 @@ extension IORecorder: Running {
             do {
                 self.videoPresentationTime = .zero
                 self.audioPresentationTime = .zero
-                let url = self.moviesDirectory.appendingPathComponent((UUID().uuidString)).appendingPathExtension("mp4")
-                self.writer = try AVAssetWriter(outputURL: url, fileType: .mp4)
-                self.isRunning.mutate { $0 = true }
+                if let url = fileUrl {
+                    self.writer = try AVAssetWriter(outputURL: url, fileType: .mp4)
+                    self.isRunning.mutate { $0 = true }
+                }
             } catch {
                 self.delegate?.recorder(self, errorOccured: .failedToCreateAssetWriter(error: error))
             }
