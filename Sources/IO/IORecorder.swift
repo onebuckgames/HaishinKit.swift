@@ -260,7 +260,7 @@ extension IORecorder: Running {
             do {
                 self.videoPresentationTime = .zero
                 self.audioPresentationTime = .zero
-                if let url = fileUrl {
+                if let url = self.fileUrl {
                     self.writer = try AVAssetWriter(outputURL: url, fileType: .mp4)
                     self.isRunning.mutate { $0 = true }
                 }
