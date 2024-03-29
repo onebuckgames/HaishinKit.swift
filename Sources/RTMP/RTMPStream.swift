@@ -575,13 +575,13 @@ open class RTMPStream: IOStream {
     override public func append(_ sampleBuffer: CMSampleBuffer) {
         switch sampleBuffer.formatDescription?._mediaType {
         case kCMMediaType_Audio:
-            muxer.lockVideoQueue.async {
+//            muxer.lockVideoQueue.async {
                 self.muxer.appendAudio(sampleBuffer)
-            }
+//            }
         case kCMMediaType_Video:
-            muxer.lockVideoQueue.async {
+//            muxer.lockVideoQueue.async {
                 self.muxer.append(sampleBuffer)
-            }
+//            }
         default:
             break
         }
