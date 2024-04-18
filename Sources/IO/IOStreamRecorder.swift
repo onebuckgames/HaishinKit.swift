@@ -3,18 +3,18 @@ import AVFoundation
 import SwiftPMSupport
 #endif
 
-/// The interface an IORecorder uses to inform its delegate.
-public protocol IORecorderDelegate: AnyObject {
+/// The interface an IOStreamRecorderDelegate uses to inform its delegate.
+public protocol IOStreamRecorderDelegate: AnyObject {
     /// Tells the receiver to recorder error occured.
-    func recorder(_ recorder: IORecorder, errorOccured error: IORecorder.Error)
+    func recorder(_ recorder: IOStreamRecorder, errorOccured error: IOStreamRecorder.Error)
     /// Tells the receiver to finish writing.
-    func recorder(_ recorder: IORecorder, finishWriting writer: AVAssetWriter)
+    func recorder(_ recorder: IOStreamRecorder, finishWriting writer: AVAssetWriter)
 }
 
 // MARK: -
-/// The IORecorder class represents video and audio recorder.
-public final class IORecorder {
-    /// The IORecorder error domain codes.
+/// The IOStreamRecorder class represents video and audio recorder.
+public final class IOStreamRecorder {
+    /// The IOStreamRecorder error domain codes.
     public enum Error: Swift.Error {
         /// Failed to create the AVAssetWriter.
         case failedToCreateAssetWriter(error: any Swift.Error)
@@ -26,8 +26,8 @@ public final class IORecorder {
         case failedToFinishWriting(error: (any Swift.Error)?)
     }
 
-    /// The default output settings for an IORecorder.
-    public static let defaultOutputSettings: [AVMediaType: [String: Any]] = [
+    /// The default output settings for an IOStreamRecorder.
+    public static let defaultSettings: [AVMediaType: [String: Any]] = [
         .audio: [
             AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
             AVSampleRateKey: 0,
@@ -41,9 +41,9 @@ public final class IORecorder {
     ]
 
     /// Specifies the delegate.
-    public weak var delegate: (any IORecorderDelegate)?
+    public weak var delegate: (any IOStreamRecorderDelegate)?
     /// Specifies the recorder settings.
-    public var outputSettings: [AVMediaType: [String: Any]] = IORecorder.defaultOutputSettings
+    public var settings: [AVMediaType: [String: Any]] = IOStreamRecorder.defaultSettings
     /// The running indicies whether recording or not.
     public private(set) var isRunning: Atomic<Bool> = .init(false)
 
@@ -52,11 +52,10 @@ public final class IORecorder {
         guard let writer = writer else {
             return false
         }
-        return outputSettings.count == writer.inputs.count
+        return settings.count == writer.inputs.count
     }
     private var writer: AVAssetWriter?
     private var writerInputs: [AVMediaType: AVAssetWriterInput] = [:]
-    private var pixelBufferAdaptor: AVAssetWriterInputPixelBufferAdaptor?
     private var audioPresentationTime: CMTime = .zero
     private var videoPresentationTime: CMTime = .zero
     private var dimensions: CMVideoDimensions = .init(width: 0, height: 0)
@@ -72,11 +71,11 @@ public final class IORecorder {
     #endif
 
     /// Append a sample buffer for recording.
-    public func append(_ sampleBuffer: CMSampleBuffer) {
+    func append(_ sampleBuffer: CMSampleBuffer) {
         guard isRunning.value else {
             return
         }
-        let mediaType: AVMediaType = (sampleBuffer.formatDescription?._mediaType == kCMMediaType_Video) ? .video : .audio
+        let mediaType: AVMediaType = (sampleBuffer.formatDescription?.mediaType == .video) ? .video : .audio
         lockQueue.async {
             guard
                 let writer = self.writer,
@@ -114,41 +113,6 @@ public final class IORecorder {
         }
     }
 
-    /// Append a pixel buffer for recording.
-    public func append(_ pixelBuffer: CVPixelBuffer, withPresentationTime: CMTime) {
-        guard isRunning.value else {
-            return
-        }
-        lockQueue.async {
-            if self.dimensions.width != pixelBuffer.width || self.dimensions.height != pixelBuffer.height {
-                self.dimensions = .init(width: Int32(pixelBuffer.width), height: Int32(pixelBuffer.height))
-            }
-            guard
-                let writer = self.writer,
-                let input = self.makeWriterInput(.video, sourceFormatHint: nil),
-                let adaptor = self.makePixelBufferAdaptor(input),
-                self.isReadyForStartWriting && self.videoPresentationTime.seconds < withPresentationTime.seconds else {
-                return
-            }
-
-            switch writer.status {
-            case .unknown:
-                writer.startWriting()
-                writer.startSession(atSourceTime: withPresentationTime)
-            default:
-                break
-            }
-
-            if input.isReadyForMoreMediaData {
-                if adaptor.append(pixelBuffer, withPresentationTime: withPresentationTime) {
-                    self.videoPresentationTime = withPresentationTime
-                } else {
-                    self.delegate?.recorder(self, errorOccured: .failedToAppend(error: writer.error))
-                }
-            }
-        }
-    }
-
     func append(_ audioPCMBuffer: AVAudioPCMBuffer, when: AVAudioTime) {
         guard isRunning.value else {
             return
@@ -172,7 +136,6 @@ public final class IORecorder {
             self.delegate?.recorder(self, finishWriting: writer)
             self.writer = nil
             self.writerInputs.removeAll()
-            self.pixelBufferAdaptor = nil
             dispatchGroup.leave()
         }
         dispatchGroup.wait()
@@ -184,12 +147,12 @@ public final class IORecorder {
         }
 
         var outputSettings: [String: Any] = [:]
-        if let defaultOutputSettings: [String: Any] = self.outputSettings[mediaType] {
+        if let defaultOutputSettings: [String: Any] = self.settings[mediaType] {
             switch mediaType {
             case .audio:
                 guard
                     let format = sourceFormatHint,
-                    let inSourceFormat = format.streamBasicDescription?.pointee else {
+                    let inSourceFormat = format.audioStreamBasicDescription else {
                     break
                 }
                 for (key, value) in defaultOutputSettings {
@@ -230,21 +193,22 @@ public final class IORecorder {
         }
         return input
     }
+}
 
-    private func makePixelBufferAdaptor(_ writerInput: AVAssetWriterInput?) -> AVAssetWriterInputPixelBufferAdaptor? {
-        guard pixelBufferAdaptor == nil else {
-            return pixelBufferAdaptor
+extension IOStreamRecorder: IOStreamObserver {
+    // MARK: IOStreamObserver
+    public func stream(_ stream: IOStream, didOutput video: CMSampleBuffer) {
+        append(video)
+    }
+
+    public func stream(_ stream: IOStream, didOutput audio: AVAudioBuffer, when: AVAudioTime) {
+        if let audio = audio as? AVAudioPCMBuffer {
+            append(audio, when: when)
         }
-        guard let writerInput = writerInput else {
-            return nil
-        }
-        let adaptor = AVAssetWriterInputPixelBufferAdaptor(assetWriterInput: writerInput, sourcePixelBufferAttributes: [:])
-        pixelBufferAdaptor = adaptor
-        return adaptor
     }
 }
 
-extension IORecorder: Running {
+extension IOStreamRecorder: Running {
     // MARK: Running
     public func startRunning() {
         lockQueue.async {

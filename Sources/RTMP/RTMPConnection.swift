@@ -181,8 +181,6 @@ public class RTMPConnection: EventDispatcher {
     public private(set) var uri: URL?
     /// Specifies the instance connected to server(true) or not(false).
     public private(set) var connected = false
-    /// Specifies the instance requires Network.framework if possible.
-    public var requireNetworkFramework = true
     /// Specifies the socket optional parameters.
     public var parameters: Any?
     /// Specifies the object encoding for this RTMPConnection instance.
@@ -292,11 +290,7 @@ public class RTMPConnection: EventDispatcher {
         case "rtmpt", "rtmpts":
             socket = socket is RTMPTSocket ? socket : RTMPTSocket()
         default:
-            if #available(iOS 12.0, macOS 10.14, tvOS 12.0, *), requireNetworkFramework {
-                socket = socket is RTMPNWSocket ? socket : RTMPNWSocket()
-            } else {
-                socket = socket is RTMPSocket ? socket : RTMPSocket()
-            }
+            socket = socket is RTMPNWSocket ? socket : RTMPNWSocket()
         }
         socket.map {
             $0.timeout = timeout
@@ -338,6 +332,11 @@ public class RTMPConnection: EventDispatcher {
     }
 
     func createStream(_ stream: RTMPStream) {
+        if let fcPublishName = stream.fcPublishName {
+            // FMLE-compatible sequences
+            call("releaseStream", responder: nil, arguments: fcPublishName)
+            call("FCPublish", responder: nil, arguments: fcPublishName)
+        }
         let responder = RTMPResponder(result: { data -> Void in
             guard let id = data[0] as? Double else {
                 return

@@ -15,7 +15,8 @@ open class SampleHandler: RPBroadcastSampleHandler {
     }()
 
     private lazy var rtmpStream: RTMPStream = {
-        RTMPStream(connection: rtmpConnection)
+        FeatureUtil.setEnabled(for: .multiTrackAudioMixing, isEnabled: true)
+        return RTMPStream(connection: rtmpConnection)
     }()
 
     private var isMirophoneOn = false
@@ -47,13 +48,12 @@ open class SampleHandler: RPBroadcastSampleHandler {
             }
             rtmpStream.append(sampleBuffer)
         case .audioMic:
-            isMirophoneOn = true
             if CMSampleBufferDataIsReady(sampleBuffer) {
-                rtmpStream.append(sampleBuffer)
+                rtmpStream.append(sampleBuffer, track: 0)
             }
         case .audioApp:
-            if !isMirophoneOn && CMSampleBufferDataIsReady(sampleBuffer) {
-                rtmpStream.append(sampleBuffer)
+            if CMSampleBufferDataIsReady(sampleBuffer) {
+                rtmpStream.append(sampleBuffer, track: 1)
             }
         @unknown default:
             break

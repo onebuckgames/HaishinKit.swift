@@ -4,6 +4,7 @@
 [![Platform Compatibility](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fshogo4405%2FHaishinKit.swift%2Fbadge%3Ftype%3Dplatforms)](https://swiftpackageindex.com/shogo4405/HaishinKit.swift)
 [![Swift Compatibility](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fshogo4405%2FHaishinKit.swift%2Fbadge%3Ftype%3Dswift-versions)](https://swiftpackageindex.com/shogo4405/HaishinKit.swift)
 [![GitHub license](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://raw.githubusercontent.com/shogo4405/HaishinKit.swift/master/LICENSE.md)
+[![GitHub Sponsor](https://img.shields.io/static/v1?label=Sponsor&message=%E2%9D%A4&logo=GitHub&color=ff69b4)](https://github.com/sponsors/shogo4405)
 
 * Camera and Microphone streaming library via RTMP and SRT for iOS, macOS, tvOS and visionOS.
 * README.md contains unreleased content, which can be tested on the main branch.
@@ -32,7 +33,11 @@ Enterprise Grade APIs for Feeds & Chat. <a href="https://getstream.io/tutorials/
 
 ## 💖 Sponsors
 <p align="center">
-<a href="https://streamlabs.com/" target="_blank"><img src="https://user-images.githubusercontent.com/810189/206836172-9c360977-ab6b-4eff-860b-82d0e7b06318.png" width="350px" alt="Streamlabs" /></a>
+  <br />
+  <br />
+  <a href="https://github.com/sponsors/shogo4405">Sponsorship</a>
+  <br />
+  <br />
 </p>
 
 ## 🌏 Related projects
@@ -63,7 +68,7 @@ Project name    |Notes       |License
 - [x] Playback(beta)
 - [ ] mode
   - [x] caller
-  - [x] listener
+  - [ ] listener
   - [ ] rendezvous
 
 ### Multi Camera
@@ -78,14 +83,14 @@ Supports two camera video sources. A picture-in-picture display that shows the i
 stream.isMultiCamSessionEnabled = true
 
 let back = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back)
-stream.attachCamera(back, channel: 0) { _, error in
+stream.attachCamera(back, track: 0) { _, error in
   if let error {
     logger.warn(error)
   }
 }
 
 let front = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front)
-stream.attachCamera(front, channel: 1) { videoUnit, error in
+stream.attachCamera(front, track: 1) { videoUnit, error in
   videoUnit?.isVideoMirrored = true
   if let error {
     logger.error(error)
@@ -124,15 +129,15 @@ open HaishinKit.xcodeproj
 ### Development
 |Version|Xcode|Swift|
 |:----:|:----:|:----:|
+|1.8.0+|15.3+|5.9+|
 |1.7.0+|15.0+|5.9+|
 |1.6.0+|15.0+|5.8+|
-|1.5.0+|14.0+|5.7+|
 
 ### OS
 |-|iOS|tvOS|macOS|visionOS|watchOS|
 |:----|:----:|:----:|:----:|:----:|:----:|
-|HaishinKit|12.0+|12.0+|10.13+|1.0+|-|
-|SRTHaishinKit|12.0+|-|13.0+|-|-|
+|HaishinKit|13.0+|13.0+|10.15+|1.0+|-|
+|SRTHaishinKit|13.0+|-|13.0+|-|-|
 
 ### Cocoa Keys
 Please contains Info.plist.
@@ -176,11 +181,13 @@ do {
 let connection = RTMPConnection()
 let stream = RTMPStream(connection: connection)
 
-stream.attachAudio(AVCaptureDevice.default(for: .audio)) { error in
-  // print(error)
+stream.attachAudio(AVCaptureDevice.default(for: .audio)) { _, error in
+  if let error {
+    logger.warn(error)
+  }
 }
 
-stream.attachCamera(AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back), channel: 0) { _, error in
+stream.attachCamera(AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back), track: 0) { _, error in
   if let error {
     logger.warn(error)
   }
@@ -227,7 +234,7 @@ let stream = SRTStream(connection: connection)
 stream.attachAudio(AVCaptureDevice.default(for: .audio)) { error in
     // print(error)
 }
-stream.attachCamera(AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back), channel: 0) { _, error in
+stream.attachCamera(AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back), track: 0) { _, error in
   if let error {
     logger.warn(error)
   }
@@ -268,7 +275,7 @@ stream.sessionPreset = AVCaptureSession.Preset.medium
 
 /// Specifies the video capture settings.
 let front = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front)
-stream.attachCamera(front, channel: 0) { videoUnit, error in
+stream.attachCamera(front, track: 0) { videoUnit, error in
   videoUnit?.isVideoMirrored = true
   videoUnit?.preferredVideoStabilizationMode = .standard
   videoUnit?.colorFormat = kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange
@@ -277,7 +284,7 @@ stream.attachCamera(front, channel: 0) { videoUnit, error in
 
 ### 🔊 [AudioCodecSettings](https://shogo4405.github.io/HaishinKit.swift/Structs/AudioCodecSettings.html)
 When you specify the sampling rate, it will perform resampling. Additionally, in the case of multiple channels, downsampling can be applied.
-```
+```swift
 stream.audioSettings = AudioCodecSettings(
   bitRate: Int = 64 * 1000,
   sampleRate: Float64 = 0,
@@ -288,7 +295,7 @@ stream.audioSettings = AudioCodecSettings(
 ```
 
 ### 🎥 [VideoCodecSettings](https://shogo4405.github.io/HaishinKit.swift/Structs/VideoCodecSettings.html)
-```
+```swift
 stream.videoSettings = VideoCodecSettings(
   videoSize: .init(width: 854, height: 480),
   profileLevel: kVTProfileLevel_H264_Baseline_3_1 as String,
@@ -302,9 +309,12 @@ stream.videoSettings = VideoCodecSettings(
 ```
 
 ### ⏺️ Recording
-```
+```swift
 // Specifies the recording settings. 0" means the same of input.
-stream.startRecording(self, settings: [
+var recorder = IOStreamRecorder()
+stream.addObserver(recorder)
+
+recorder.settings = [
   AVMediaType.audio: [
     AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
     AVSampleRateKey: 0,
@@ -323,41 +333,11 @@ stream.startRecording(self, settings: [
     ]
     */
   ]
-])
+]
+
+recorder.startRunning()
+// recorder.stopRunning()
 ```
-
-## 💠 Sponsorship
-Looking for sponsors. Sponsoring I will enable us to:
-- Purchase smartphones or peripheral devices for testing purposes.
-- Pay for testing on a specific streaming service or for testing on mobile lines.
-- Potentially private use to continue the OSS development
-
- If you use any of our libraries for work, see if your employers would be interested in sponsorship. I have some special offers.　I would greatly appreciate. Thank you.
- - If you request I will note your name product our README.
- - If you mention on a discussion, an issue or pull request that you are sponsoring us I will prioritise helping you even higher.
-
-スポンサーを募集しています。利用用途としては、
-- テスト目的で、スマートフォンの購入や周辺機器の購入を行います。
-- 特定のストリーミングサービスへのテストの支払いや、モバイル回線でのテストの支払いに利用します。
-- 著書のOSS開発を継続的に行う為に私的に利用する可能性もあります。
-
-このライブラリーを仕事で継続的に利用している場合は、ぜひ。雇用主に、スポンサーに興味がないか確認いただけると幸いです。いくつか特典を用意しています。
-- README.mdへの企業ロゴの掲載
-- IssueやPull Requestの優先的な対応
-
-[Sponsorship](https://github.com/sponsors/shogo4405)
-
-## 📖 Reference
-* Adobe’s Real Time Messaging Protocol
-  * http://www.adobe.com/content/dam/Adobe/en/devnet/rtmp/pdf/rtmp_specification_1.0.pdf
-* Action Message Format -- AMF 0
-  * https://www.adobe.com/content/dam/acom/en/devnet/pdf/amf0-file-format-specification.pdf
-* Action Message Format -- AMF 3 
-  * https://www.adobe.com/content/dam/acom/en/devnet/pdf/amf-file-format-spec.pdf
-* Video File Format Specification Version 10
-  * https://www.adobe.com/content/dam/acom/en/devnet/flv/video_file_format_spec_v10.pdf
-* Adobe Flash Video File Format Specification Version 10.1
-  * http://download.macromedia.com/f4v/video_file_format_spec_v10_1.pdf
 
 ## 📜 License
 BSD-3-Clause

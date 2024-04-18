@@ -9,7 +9,7 @@ protocol IOMixerDelegate: AnyObject {
     func mixer(_ mixer: IOMixer, didOutput video: CMSampleBuffer)
     func mixer(_ mixer: IOMixer, videoErrorOccurred error: IOVideoUnitError)
     func mixer(_ mixer: IOMixer, audioErrorOccurred error: IOAudioUnitError)
-    #if os(iOS) || os(tvOS)
+    #if os(iOS) || os(tvOS) || os(visionOS)
     @available(tvOS 17.0, *)
     func mixer(_ mixer: IOMixer, sessionWasInterrupted session: AVCaptureSession, reason: AVCaptureSession.InterruptionReason?)
     @available(tvOS 17.0, *)
@@ -27,8 +27,6 @@ final class IOMixer {
 
     private(set) var isRunning: Atomic<Bool> = .init(false)
 
-    private(set) lazy var recorder = IORecorder()
-
     private(set) lazy var audioIO = {
         var audioIO = IOAudioUnit()
         audioIO.mixer = self
@@ -41,13 +39,11 @@ final class IOMixer {
         return videoIO
     }()
 
-    #if os(iOS) || os(tvOS) || os(macOS)
     private(set) lazy var session = {
         var session = IOCaptureSession()
         session.delegate = self
         return session
     }()
-    #endif
 
     private(set) lazy var audioEngine: AVAudioEngine? = {
         return IOStream.audioEngineHolder.retain()
@@ -57,7 +53,7 @@ final class IOMixer {
         IOStream.audioEngineHolder.release(audioEngine)
     }
 
-    #if os(iOS) || os(tvOS)
+    #if os(iOS) || os(tvOS) || os(visionOS)
     func setBackgroundMode(_ background: Bool) {
         guard #available(tvOS 17.0, *) else {
             return
@@ -135,11 +131,11 @@ extension IOMixer: AudioCodecDelegate {
     }
 }
 
-#if os(iOS) || os(tvOS) || os(macOS)
 extension IOMixer: IOCaptureSessionDelegate {
     // MARK: IOCaptureSessionDelegate
     @available(tvOS 17.0, *)
     func captureSession(_ capture: IOCaptureSession, sessionRuntimeError session: AVCaptureSession, error: AVError) {
+        #if os(iOS) || os(tvOS) || os(macOS)
         switch error.code {
         case .unsupportedDeviceActiveFormat:
             guard let device = error.device, let format = device.videoFormat(
@@ -165,9 +161,10 @@ extension IOMixer: IOCaptureSessionDelegate {
         default:
             break
         }
+        #endif
     }
 
-    #if os(iOS) || os(tvOS)
+    #if os(iOS) || os(tvOS) || os(visionOS)
     @available(tvOS 17.0, *)
     func captureSession(_ _: IOCaptureSession, sessionWasInterrupted session: AVCaptureSession, reason: AVCaptureSession.InterruptionReason?) {
         delegate?.mixer(self, sessionWasInterrupted: session, reason: reason)
@@ -179,7 +176,6 @@ extension IOMixer: IOCaptureSessionDelegate {
     }
     #endif
 }
-#endif
 
 extension IOMixer: IOAudioUnitDelegate {
     // MARK: IOAudioUnitDelegate
@@ -189,7 +185,6 @@ extension IOMixer: IOAudioUnitDelegate {
 
     func audioUnit(_ audioUnit: IOAudioUnit, didOutput audioBuffer: AVAudioPCMBuffer, when: AVAudioTime) {
         delegate?.mixer(self, didOutput: audioBuffer, when: when)
-        recorder.append(audioBuffer, when: when)
     }
 }
 

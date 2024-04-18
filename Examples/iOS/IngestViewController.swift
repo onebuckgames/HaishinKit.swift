@@ -51,7 +51,7 @@ final class IngestViewController: UIViewController {
         }
         stream.isMonitoringEnabled = DeviceUtil.isHeadphoneConnected()
         stream.audioSettings.bitRate = 64 * 1000
-        stream.bitrateStrategy = IOStreamVideoAdaptiveNetBitRateStrategy(mamimumVideoBitrate: VideoCodecSettings.default.bitRate)
+        stream.bitrateStrategy = IOStreamVideoAdaptiveBitRateStrategy(mamimumVideoBitrate: VideoCodecSettings.default.bitRate)
         videoBitrateSlider?.value = Float(VideoCodecSettings.default.bitRate) / 1000
         audioBitrateSlider?.value = Float(AudioCodecSettings.default.bitRate) / 1000
 
@@ -62,23 +62,23 @@ final class IngestViewController: UIViewController {
         logger.info("viewWillAppear")
         super.viewWillAppear(animated)
         let back = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: currentPosition)
-        stream.attachCamera(back, channel: 0) { _, error in
+        stream.attachCamera(back, track: 0) { _, error in
             if let error {
                 logger.warn(error)
             }
         }
-        stream.attachAudio(AVCaptureDevice.default(for: .audio), automaticallyConfiguresApplicationAudioSession: false) { error in
+        stream.attachAudio(AVCaptureDevice.default(for: .audio)) { _, error in
             logger.warn(error)
         }
         let front = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front)
-        stream.attachCamera(front, channel: 1) { videoUnit, error in
+        stream.attachCamera(front, track: 1) { videoUnit, error in
             videoUnit?.isVideoMirrored = true
             if let error {
                 logger.error(error)
             }
         }
         stream.addObserver(self, forKeyPath: "currentFPS", options: .new, context: nil)
-        (view as? (any IOStreamDrawable))?.attachStream(stream)
+        (view as? (any IOStreamView))?.attachStream(stream)
         NotificationCenter.default.addObserver(self, selector: #selector(didInterruptionNotification(_:)), name: AVAudioSession.interruptionNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(didRouteChangeNotification(_:)), name: AVAudioSession.routeChangeNotification, object: nil)
     }
@@ -89,8 +89,8 @@ final class IngestViewController: UIViewController {
         stream.removeObserver(self, forKeyPath: "currentFPS")
         (stream as? RTMPStream)?.close()
         stream.attachAudio(nil)
-        stream.attachCamera(nil, channel: 0)
-        stream.attachCamera(nil, channel: 1)
+        stream.attachCamera(nil, track: 0)
+        stream.attachCamera(nil, track: 1)
         // swiftlint:disable:next notification_center_detachment
         NotificationCenter.default.removeObserver(self)
     }
@@ -127,10 +127,10 @@ final class IngestViewController: UIViewController {
     @IBAction func rotateCamera(_ sender: UIButton) {
         logger.info("rotateCamera")
         if stream.isMultiCamSessionEnabled {
-            if stream.videoMixerSettings.channel == 0 {
-                stream.videoMixerSettings.channel = 1
+            if stream.videoMixerSettings.mainTrack == 0 {
+                stream.videoMixerSettings.mainTrack = 1
             } else {
-                stream.videoMixerSettings.channel = 0
+                stream.videoMixerSettings.mainTrack = 0
             }
         } else {
             let position: AVCaptureDevice.Position = currentPosition == .back ? .front : .back
@@ -152,7 +152,7 @@ final class IngestViewController: UIViewController {
         }
         if slider == videoBitrateSlider {
             videoBitrateLabel?.text = "video \(Int(slider.value))/kbps"
-            stream.bitrateStrategy = IOStreamVideoAdaptiveNetBitRateStrategy(mamimumVideoBitrate: Int(slider.value * 1000))
+            stream.bitrateStrategy = IOStreamVideoAdaptiveBitRateStrategy(mamimumVideoBitrate: Int(slider.value * 1000))
         }
         if slider == zoomSlider {
             let zoomFactor = CGFloat(slider.value)
@@ -301,13 +301,13 @@ final class IngestViewController: UIViewController {
     }
 }
 
-extension IngestViewController: IORecorderDelegate {
-    // MARK: IORecorderDelegate
-    func recorder(_ recorder: IORecorder, errorOccured error: IORecorder.Error) {
+extension IngestViewController: IOStreamRecorderDelegate {
+    // MARK: IOStreamRecorderDelegate
+    func recorder(_ recorder: IOStreamRecorder, errorOccured error: IOStreamRecorder.Error) {
         logger.error(error)
     }
 
-    func recorder(_ recorder: IORecorder, finishWriting writer: AVAssetWriter) {
+    func recorder(_ recorder: IOStreamRecorder, finishWriting writer: AVAssetWriter) {
         PHPhotoLibrary.shared().performChanges({() -> Void in
             PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: writer.outputURL)
         }, completionHandler: { _, error -> Void in
@@ -350,7 +350,7 @@ extension IngestViewController: UIPickerViewDelegate {
         } catch {
             logger.warn("can't set supported setPreferredDataSource")
         }
-        stream.attachAudio(AVCaptureDevice.default(for: .audio), automaticallyConfiguresApplicationAudioSession: false) { error in
+        stream.attachAudio(AVCaptureDevice.default(for: .audio)) { _, error in
             logger.warn(error)
         }
     }

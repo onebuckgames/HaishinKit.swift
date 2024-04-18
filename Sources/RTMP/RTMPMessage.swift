@@ -336,6 +336,9 @@ final class RTMPCommandMessage: RTMPMessage {
             switch commandName {
             case "close":
                 connection.close(isDisconnected: true)
+            case "onFCPublish", "onFCUnpublish":
+                // The specification is undefined, ignores it because it cannot handle it properly.
+                logger.info(commandName, arguments)
             default:
                 connection.dispatch(.rtmpStatus, bubbles: false, data: arguments.first as Any?)
             }
@@ -589,7 +592,7 @@ final class RTMPVideoMessage: RTMPMessage {
     }
 
     private var offset: Int {
-        return isExHeader ? 3 : 0
+        return isExHeader ? packetType == FLVVideoPacketType.codedFrames.rawValue ? 3 : 0 : 0
     }
 
     init() {

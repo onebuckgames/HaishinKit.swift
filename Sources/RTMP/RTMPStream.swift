@@ -230,27 +230,27 @@ open class RTMPStream: IOStream {
             }
         }
     }
+    /// Specifies the stream name used for FMLE-compatible sequences.
+    public var fcPublishName: String?
+
     var id: UInt32 = RTMPStream.defaultID
-    var audioTimestamp: Double = 0.0
-    var videoTimestamp: Double = 0.0
+    var frameCount: UInt16 = 0
     private(set) lazy var muxer = {
         return RTMPMuxer(self)
     }()
     private var messages: [RTMPCommandMessage] = []
     private var startedAt = Date()
-    private var frameCount: UInt16 = 0
     private var dispatcher: (any EventDispatcherConvertible)!
-    private var audioWasSent = false
-    private var videoWasSent = false
     private var pausedStatus = PausedStatus(hasAudio: false, hasVideo: false)
     private var howToPublish: RTMPStream.HowToPublish = .live
-    private var dataTimeStamps: [String: Date] = .init()
+    private var dataTimestamps: [String: Date] = .init()
     private weak var connection: RTMPConnection?
 
     /// Creates a new stream.
-    public init(connection: RTMPConnection) {
+    public init(connection: RTMPConnection, fcPublishName: String? = nil) {
         self.connection = connection
         super.init()
+        self.fcPublishName = fcPublishName
         dispatcher = EventDispatcher(target: self)
         connection.streams.append(self)
         addEventListener(.rtmpStatus, selector: #selector(on(status:)), observer: self)
@@ -366,26 +366,40 @@ open class RTMPStream: IOStream {
     }
 
     /// Sends a message on a published stream to all subscribing clients.
-    public func send(handlerName: String, arguments: Any?...) {
+    ///
+    /// ```
+    /// // To add a metadata to a live stream sent to an RTMP Service.
+    /// stream.send("@setDataFrame", "onMetaData", metaData)
+    /// // To clear a metadata that has already been set in the stream.
+    /// stream.send("@clearDataFrame", "onMetaData");
+    /// ```
+    ///
+    /// - Parameters:
+    ///   - handlerName: The message to send.
+    ///   - arguemnts: Optional arguments.
+    ///   - isResetTimestamp: A workaround option for sending timestamps as 0 in some services.
+    public func send(handlerName: String, arguments: Any?..., isResetTimestamp: Bool = false) {
         lockQueue.async {
-            guard let connection = self.connection, self.readyState == .publishing(muxer: self.muxer) else {
+            guard self.readyState == .publishing(muxer: self.muxer) else {
                 return
             }
-            let dataWasSent = self.dataTimeStamps[handlerName] == nil ? false : true
-            let timestmap: UInt32 = dataWasSent ? UInt32((self.dataTimeStamps[handlerName]?.timeIntervalSinceNow ?? 0) * -1000) : UInt32(self.startedAt.timeIntervalSinceNow * -1000)
-            let chunk = RTMPChunk(
-                type: dataWasSent ? RTMPChunkType.one : RTMPChunkType.zero,
-                streamId: RTMPChunk.StreamID.data.rawValue,
+            if isResetTimestamp {
+                self.dataTimestamps[handlerName] = nil
+            }
+            let dataWasSent = self.dataTimestamps[handlerName] == nil ? false : true
+            let timestmap: UInt32 = dataWasSent ? UInt32((self.dataTimestamps[handlerName]?.timeIntervalSinceNow ?? 0) * -1000) : UInt32(self.startedAt.timeIntervalSinceNow * -1000)
+            self.doOutput(
+                dataWasSent ? RTMPChunkType.one : RTMPChunkType.zero,
+                chunkStreamId: RTMPChunk.StreamID.data.rawValue,
                 message: RTMPDataMessage(
                     streamId: self.id,
                     objectEncoding: self.objectEncoding,
                     timestamp: timestmap,
                     handlerName: handlerName,
                     arguments: arguments
-                ))
-            let length = connection.socket?.doOutput(chunk: chunk) ?? 0
-            self.dataTimeStamps[handlerName] = .init()
-            self.info.byteCount.mutate { $0 += Int64(length) }
+                )
+            )
+            self.dataTimestamps[handlerName] = .init()
         }
     }
 
@@ -416,16 +430,6 @@ open class RTMPStream: IOStream {
         return metadata
     }
 
-    override public func readyStateWillChange(to readyState: IOStream.ReadyState) {
-        switch self.readyState {
-        case .publishing:
-            FCUnpublish()
-        default:
-            break
-        }
-        super.readyStateWillChange(to: readyState)
-    }
-
     override public func readyStateDidChange(to readyState: IOStream.ReadyState) {
         guard let connection else {
             return
@@ -438,7 +442,6 @@ open class RTMPStream: IOStream {
             videoSampleAccess = true
             metadata.removeAll()
             info.clear()
-            delegate?.streamDidOpen(self)
             for message in messages {
                 connection.currentTransactionId += 1
                 message.streamId = id
@@ -456,15 +459,10 @@ open class RTMPStream: IOStream {
             messages.removeAll()
         case .play:
             startedAt = .init()
-            videoTimestamp = 0
-            audioTimestamp = 0
         case .publish:
             bitrateStrategy.setUp()
             startedAt = .init()
-            videoWasSent = false
-            audioWasSent = false
-            dataTimeStamps.removeAll()
-            FCPublish()
+            dataTimestamps.removeAll()
         case .publishing:
             let metadata = makeMetaData()
             send(handlerName: "@setDataFrame", arguments: "onMetaData", metadata)
@@ -486,6 +484,9 @@ open class RTMPStream: IOStream {
             return
         }
         readyState = .open
+        if let fcPublishName {
+            connection.call("FCUnpublish", responder: nil, arguments: fcPublishName)
+        }
         connection.socket?.doOutput(chunk: RTMPChunk(
                                         type: .zero,
                                         streamId: RTMPChunk.StreamID.command.rawValue,
@@ -499,44 +500,23 @@ open class RTMPStream: IOStream {
                                         )))
     }
 
+    func doOutput(_ type: RTMPChunkType, chunkStreamId: UInt16, message: RTMPMessage) {
+        guard let socket = connection?.socket else {
+            return
+        }
+        message.streamId = id
+        let length = socket.doOutput(chunk: .init(
+            type: type,
+            streamId: chunkStreamId,
+            message: message
+        ))
+        info.byteCount.mutate { $0 += Int64(length) }
+    }
+
     func on(timer: Timer) {
         currentFPS = frameCount
         frameCount = 0
         info.on(timer: timer)
-    }
-
-    func outputAudio(_ buffer: Data, withTimestamp: Double) {
-        guard let connection, readyState == .publishing(muxer: muxer) else {
-            return
-        }
-        let type: FLVTagType = .audio
-        let length = connection.socket?.doOutput(chunk: RTMPChunk(
-            type: audioWasSent ? .one : .zero,
-            streamId: type.streamId,
-            message: RTMPAudioMessage(streamId: id, timestamp: UInt32(audioTimestamp), payload: buffer)
-        )) ?? 0
-        audioWasSent = true
-        info.byteCount.mutate { $0 += Int64(length) }
-        audioTimestamp = withTimestamp + (audioTimestamp - floor(audioTimestamp))
-    }
-
-    func outputVideo(_ buffer: Data, withTimestamp: Double) {
-        guard let connection, readyState == .publishing(muxer: muxer) else {
-            return
-        }
-        let type: FLVTagType = .video
-        let length = connection.socket?.doOutput(chunk: RTMPChunk(
-            type: videoWasSent ? .one : .zero,
-            streamId: type.streamId,
-            message: RTMPVideoMessage(streamId: id, timestamp: UInt32(videoTimestamp), payload: buffer)
-        )) ?? 0
-        if !videoWasSent {
-            logger.debug("first video frame was sent")
-        }
-        videoWasSent = true
-        info.byteCount.mutate { $0 += Int64(length) }
-        videoTimestamp = withTimestamp + (videoTimestamp - floor(videoTimestamp))
-        frameCount += 1
     }
 
     @objc
@@ -558,22 +538,6 @@ open class RTMPStream: IOStream {
         default:
             break
         }
-    }
-}
-
-extension RTMPStream {
-    func FCPublish() {
-        guard let connection, let name = info.resourceName, connection.flashVer.contains("FMLE/") else {
-            return
-        }
-        connection.call("FCPublish", responder: nil, arguments: name)
-    }
-
-    func FCUnpublish() {
-        guard let connection, let name = info.resourceName, connection.flashVer.contains("FMLE/") else {
-            return
-        }
-        connection.call("FCUnpublish", responder: nil, arguments: name)
     }
 }
 

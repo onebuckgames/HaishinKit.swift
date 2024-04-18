@@ -4,23 +4,21 @@ import CoreMedia
 #if canImport(SwiftPMSupport)
 import SwiftPMSupport
 #endif
-#if canImport(ScreenCaptureKit)
-import ScreenCaptureKit
-#endif
 #if canImport(UIKit)
 import UIKit
 #endif
 
-@available(*, deprecated, renamed: "IOStreamDelegate")
-public typealias NetStreamDelegate = IOStreamDelegate
-
 /// The interface an IOStream uses to inform its delegate.
 public protocol IOStreamDelegate: AnyObject {
-    /// Tells the receiver to an audio packet incoming.
-    func stream(_ stream: IOStream, didOutput audio: AVAudioBuffer, when: AVAudioTime)
-    /// Tells the receiver to a video incoming.
-    func stream(_ stream: IOStream, didOutput video: CMSampleBuffer)
-    #if os(iOS) || os(tvOS)
+    /// Tells the receiver to video error occured.
+    func stream(_ stream: IOStream, videoErrorOccurred error: IOVideoUnitError)
+    /// Tells the receiver to audio error occured.
+    func stream(_ stream: IOStream, audioErrorOccurred error: IOAudioUnitError)
+    /// Tells the receiver that the ready state will change.
+    func stream(_ stream: IOStream, willChangeReadyState state: IOStream.ReadyState)
+    /// Tells the receiver that the ready state did change.
+    func stream(_ stream: IOStream, didChangeReadyState state: IOStream.ReadyState)
+    #if os(iOS) || os(tvOS) || os(visionOS)
     /// Tells the receiver to session was interrupted.
     @available(tvOS 17.0, *)
     func stream(_ stream: IOStream, sessionWasInterrupted session: AVCaptureSession, reason: AVCaptureSession.InterruptionReason?)
@@ -28,20 +26,7 @@ public protocol IOStreamDelegate: AnyObject {
     @available(tvOS 17.0, *)
     func stream(_ stream: IOStream, sessionInterruptionEnded session: AVCaptureSession)
     #endif
-    /// Tells the receiver to video error occured.
-    func stream(_ stream: IOStream, videoErrorOccurred error: IOVideoUnitError)
-    /// Tells the receiver to audio error occured.
-    func stream(_ stream: IOStream, audioErrorOccurred error: IOAudioUnitError)
-    /// Tells the receiver to the stream opened.
-    func streamDidOpen(_ stream: IOStream)
-    /// Tells the receiver that the ready state will change.
-    func stream(_ stream: IOStream, willChangeReadyState state: IOStream.ReadyState)
-    /// Tells the receiver that the ready state did change.
-    func stream(_ stream: IOStream, didChangeReadyState state: IOStream.ReadyState)
 }
-
-@available(*, deprecated, renamed: "IOStream")
-public typealias NetStream = IOStream
 
 /// The `IOStream` class is the foundation of a RTMPStream.
 open class IOStream: NSObject {
@@ -50,25 +35,25 @@ open class IOStream: NSObject {
         return AVAudioEngine()
     }
 
-    /// The enumeration defines the state a ReadyState NetStream is in.
+    /// The enumeration defines the state an IOStream client is in.
     public enum ReadyState: Equatable {
         public static func == (lhs: IOStream.ReadyState, rhs: IOStream.ReadyState) -> Bool {
             return lhs.rawValue == rhs.rawValue
         }
 
-        /// NetStream has been created.
+        /// IOStream has been created.
         case initialized
-        /// NetStream waiting for new method.
+        /// IOStream waiting for new method.
         case open
-        /// NetStream play() has been called.
+        /// IOStream play() has been called.
         case play
-        /// NetStream play and server was accepted as playing
+        /// IOStream play and server was accepted as playing
         case playing
-        /// NetStream publish() has been called
+        /// IOStream publish() has been called
         case publish
-        /// NetStream publish and server accpted as publising.
+        /// IOStream publish and server accpted as publising.
         case publishing(muxer: any IOMuxer)
-        /// NetStream close() has been called.
+        /// IOStream close() has been called.
         case closed
 
         var rawValue: UInt8 {
@@ -150,7 +135,7 @@ open class IOStream: NSObject {
     #if os(iOS) || os(tvOS)
     /// Specifies the AVCaptureMultiCamSession enabled.
     /// Warning: If there is a possibility of using multiple cameras, please set it to true initially.
-    @available(tvOS 17.0, iOS 13.0, *)
+    @available(tvOS 17.0, *)
     public var isMultiCamSessionEnabled: Bool {
         get {
             return mixer.session.isMultiCamSessionEnabled
@@ -186,17 +171,6 @@ open class IOStream: NSObject {
         }
     }
     #endif
-
-    /// Specifies the multi camera capture properties.
-    @available(*, deprecated, renamed: "videoMixerSettings")
-    public var multiCamCaptureSettings: IOVideoMixerSettings {
-        get {
-            mixer.videoIO.mixerSettings
-        }
-        set {
-            mixer.videoIO.mixerSettings = newValue
-        }
-    }
 
     /// Specifies the video mixer settings..
     public var videoMixerSettings: IOVideoMixerSettings {
@@ -258,11 +232,6 @@ open class IOStream: NSObject {
         return mixer.audioIO.inputFormat
     }
 
-    /// The isRecording value that indicates whether the recorder is recording.
-    public var isRecording: Bool {
-        return mixer.recorder.isRunning.value
-    }
-
     /// Specifies the controls sound.
     public var soundTransform: SoundTransform {
         get {
@@ -280,7 +249,7 @@ open class IOStream: NSObject {
     public weak var delegate: (any IOStreamDelegate)?
 
     /// Specifies the drawable.
-    public var drawable: (any IOStreamDrawable)? {
+    public var drawable: (any IOStreamView)? {
         get {
             lockQueue.sync { mixer.videoIO.drawable }
         }
@@ -290,11 +259,9 @@ open class IOStream: NSObject {
                 guard #available(tvOS 17.0, *) else {
                     return
                 }
-                #if os(iOS) || os(tvOS) || os(macOS)
                 if newValue != nil && self.mixer.videoIO.hasDevice {
                     self.mixer.session.startRunning()
                 }
-                #endif
             }
         }
     }
@@ -329,136 +296,140 @@ open class IOStream: NSObject {
         return telly
     }()
 
-    /// Creates a NetStream object.
+    private var observers: [any IOStreamObserver] = []
+
+    /// Creates an object.
     override public init() {
         super.init()
-        #if os(iOS) || os(tvOS)
+        #if os(iOS) || os(tvOS) || os(visionOS)
         NotificationCenter.default.addObserver(self, selector: #selector(didEnterBackground(_:)), name: UIApplication.didEnterBackgroundNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(willEnterForeground(_:)), name: UIApplication.willEnterForegroundNotification, object: nil)
         #endif
     }
 
-    #if os(iOS) || os(macOS) || os(tvOS)
-    /// Attaches the primary camera object.
-    /// - Warning: This method can't use appendSampleBuffer at the same time.
-    @available(tvOS 17.0, *)
-    @available(*, deprecated, renamed: "attachCamera(_:channel:configuration:)")
-    public func attachCamera(_ device: AVCaptureDevice?, onError: ((_ error: any Error) -> Void)? = nil) {
-        lockQueue.async {
-            do {
-                try self.mixer.videoIO.attachCamera(device, channel: 0, configuration: nil)
-            } catch {
-                onError?(error)
-            }
-        }
+    deinit {
+        observers.removeAll()
     }
 
-    /// Attaches the 2ndary camera  object for picture in picture.
-    /// - Warning: This method can't use appendSampleBuffer at the same time.
-    @available(iOS 13.0, tvOS 17.0, *)
-    @available(*, deprecated, renamed: "attachCamera(_:channel:configuration:)")
-    public func attachMultiCamera(_ device: AVCaptureDevice?, onError: ((_ error: any Error) -> Void)? = nil) {
-        lockQueue.async {
-            do {
-                try self.mixer.videoIO.attachCamera(device, channel: 1, configuration: nil)
-            } catch {
-                onError?(error)
-            }
-        }
-    }
-
-    /// Attaches the camera object.
+    /// Attaches the camera device.
     @available(tvOS 17.0, *)
-    public func attachCamera(_ device: AVCaptureDevice?, channel: UInt8 = 0, configuration: IOVideoCaptureConfigurationBlock? = nil) {
+    public func attachCamera(_ device: AVCaptureDevice?, track: UInt8 = 0, configuration: IOVideoCaptureConfigurationBlock? = nil) {
         lockQueue.async {
             do {
-                try self.mixer.videoIO.attachCamera(device, channel: channel, configuration: configuration)
+                try self.mixer.videoIO.attachCamera(device, track: track, configuration: configuration)
             } catch {
                 configuration?(nil, IOVideoUnitError.failedToAttach(error: error))
             }
         }
     }
 
-    /// Returns the IOVideoCaptureUnit by channel.
+    /// Returns the IOVideoCaptureUnit by track.
     @available(tvOS 17.0, *)
-    public func videoCapture(for channel: UInt8) -> IOVideoCaptureUnit? {
+    public func videoCapture(for track: UInt8) -> IOVideoCaptureUnit? {
         return mixer.videoIO.lockQueue.sync {
-            return self.mixer.videoIO.capture(for: channel)
+            return self.mixer.videoIO.capture(for: track)
         }
     }
 
-    /// Attaches the audio capture object.
-    /// - Warning: This method can't use appendSampleBuffer at the same time.
+    #if os(iOS) || os(macOS) || os(tvOS)
+    /// Attaches the audio device.
+    ///
+    /// You can perform multi-microphone capture by specifying as follows on macOS. Unfortunately, it seems that only one microphone is available on iOS.
+    /// ```
+    /// FeatureUtil.setEnabled(for: .multiTrackAudioMixing, isEnabled: true)
+    /// var audios = AVCaptureDevice.devices(for: .audio)
+    /// if let device = audios.removeFirst() {
+    ///    stream.attachAudio(device, track: 0)
+    /// }
+    /// if let device = audios.removeFirst() {
+    ///    stream.attachAudio(device, track: 1)
+    /// }
+    /// ```
     @available(tvOS 17.0, *)
-    public func attachAudio(_ device: AVCaptureDevice?, automaticallyConfiguresApplicationAudioSession: Bool = false, onError: ((_ error: any Error) -> Void)? = nil) {
+    public func attachAudio(_ device: AVCaptureDevice?, track: UInt8 = 0, configuration: IOAudioCaptureConfigurationBlock? = nil) {
         lockQueue.async {
             do {
-                try self.mixer.audioIO.attachAudio(device, automaticallyConfiguresApplicationAudioSession: automaticallyConfiguresApplicationAudioSession)
+                try self.mixer.audioIO.attachAudio(device, track: track) { capture in
+                    configuration?(capture, nil)
+                }
             } catch {
-                onError?(error)
+                configuration?(nil, IOAudioUnitError.failedToAttach(error: error))
             }
         }
     }
-    #endif
 
-    #if os(macOS)
-    /// Attaches the screen input object.
-    public func attachScreen(_ input: AVCaptureScreenInput?, channel: UInt8 = 0) {
-        lockQueue.async {
-            self.mixer.videoIO.attachScreen(input, channel: channel)
+    /// Returns the IOAudioCaptureUnit by track.
+    @available(tvOS 17.0, *)
+    public func audioCapture(for track: UInt8) -> IOAudioCaptureUnit? {
+        return mixer.audioIO.lockQueue.sync {
+            return self.mixer.audioIO.capture(for: track)
         }
     }
     #endif
 
-    /// Append a CMSampleBuffer.
-    /// - Warning: This method can't use attachCamera or attachAudio method at the same time.
-    public func append(_ sampleBuffer: CMSampleBuffer) {
-        switch sampleBuffer.formatDescription?._mediaType {
-        case kCMMediaType_Audio:
+    /// Appends a CMSampleBuffer.
+    /// - Parameters:
+    ///   - sampleBuffer:The sample buffer to append.
+    ///   - track: Track number used for mixing
+    public func append(_ sampleBuffer: CMSampleBuffer, track: UInt8 = 0) {
+        switch sampleBuffer.formatDescription?.mediaType {
+        case .audio?:
             mixer.audioIO.lockQueue.async {
-                self.mixer.audioIO.append(sampleBuffer)
+                self.mixer.audioIO.append(sampleBuffer, track: track)
             }
-        case kCMMediaType_Video:
+        case .video?:
             mixer.videoIO.lockQueue.async {
-                self.mixer.videoIO.append(sampleBuffer)
+                self.mixer.videoIO.append(sampleBuffer, track: track)
             }
         default:
             break
         }
     }
 
-    /// Append an AVAudioBuffer.
-    /// - Warning: This method can't use attachAudio method at the same time.
-    public func append(_ audioBuffer: AVAudioBuffer, when: AVAudioTime) {
+    /// Appends an AVAudioBuffer.
+    /// - Parameters:
+    ///   - audioBuffer:The audio buffer to append.
+    ///   - when: The audio time to append.
+    ///   - track: Track number used for mixing.
+    public func append(_ audioBuffer: AVAudioBuffer, when: AVAudioTime, track: UInt8 = 0) {
         mixer.audioIO.lockQueue.async {
-            self.mixer.audioIO.append(audioBuffer, when: when)
+            self.mixer.audioIO.append(audioBuffer, when: when, track: track)
         }
     }
 
-    /// Register a video effect.
+    /// Registers a video effect.
     public func registerVideoEffect(_ effect: VideoEffect) -> Bool {
         mixer.videoIO.lockQueue.sync {
             self.mixer.videoIO.registerEffect(effect)
         }
     }
 
-    /// Unregister a video effect.
+    /// Unregisters a video effect.
     public func unregisterVideoEffect(_ effect: VideoEffect) -> Bool {
         mixer.videoIO.lockQueue.sync {
             self.mixer.videoIO.unregisterEffect(effect)
         }
     }
 
-    /// Starts recording.
-    public func startRecording(_ delegate: any IORecorderDelegate, settings: [AVMediaType: [String: Any]] = IORecorder.defaultOutputSettings) {
-        mixer.recorder.delegate = delegate
-        mixer.recorder.outputSettings = settings
-        mixer.recorder.startRunning()
+    /// Adds an observer.
+    public func addObserver(_ observer: any IOStreamObserver) {
+        guard !observers.contains(where: { $0 === observer }) else {
+            return
+        }
+        observers.append(observer)
     }
 
-    /// Stop recording.
-    public func stopRecording() {
-        mixer.recorder.stopRunning()
+    /// Removes an observer.
+    public func removeObserver(_ observer: any IOStreamObserver) {
+        if let index = observers.firstIndex(where: { $0 === observer }) {
+            observers.remove(at: index)
+        }
+    }
+
+    /// Configurations for the AVCaptureSession.
+    @available(tvOS 17.0, *)
+    func configuration(_ lambda: (_ session: AVCaptureSession) throws -> Void) rethrows {
+        try mixer.session.configuration(lambda)
     }
 
     /// A handler that receives stream readyState will update.
@@ -483,10 +454,7 @@ open class IOStream: NSObject {
             mixer.muxer = telly
             mixer.startRunning()
         case .publish:
-            #if os(iOS) || os(tvOS) || os(macOS)
-            // Start capture audio and video data.
             mixer.session.startRunning()
-            #endif
         case .publishing(let muxer):
             mixer.muxer = muxer
             mixer.startRunning()
@@ -495,7 +463,7 @@ open class IOStream: NSObject {
         }
     }
 
-    #if os(iOS) || os(tvOS)
+    #if os(iOS) || os(tvOS) || os(visionOS)
     @objc
     private func didEnterBackground(_ notification: Notification) {
         // Require main thread. Otherwise the microphone cannot be used in the background.
@@ -514,11 +482,11 @@ open class IOStream: NSObject {
 extension IOStream: IOMixerDelegate {
     // MARK: IOMixerDelegate
     func mixer(_ mixer: IOMixer, didOutput video: CMSampleBuffer) {
-        delegate?.stream(self, didOutput: video)
+        observers.forEach { $0.stream(self, didOutput: video) }
     }
 
     func mixer(_ mixer: IOMixer, didOutput audio: AVAudioPCMBuffer, when: AVAudioTime) {
-        delegate?.stream(self, didOutput: audio, when: when)
+        observers.forEach { $0.stream(self, didOutput: audio, when: when) }
     }
 
     func mixer(_ mixer: IOMixer, audioErrorOccurred error: IOAudioUnitError) {
@@ -529,7 +497,7 @@ extension IOStream: IOMixerDelegate {
         delegate?.stream(self, videoErrorOccurred: error)
     }
 
-    #if os(iOS) || os(tvOS)
+    #if os(iOS) || os(tvOS) || os(visionOS)
     @available(tvOS 17.0, *)
     func mixer(_ mixer: IOMixer, sessionWasInterrupted session: AVCaptureSession, reason: AVCaptureSession.InterruptionReason?) {
         delegate?.stream(self, sessionWasInterrupted: session, reason: reason)
@@ -574,56 +542,3 @@ extension IOStream: IOTellyUnitDelegate {
         })
     }
 }
-
-extension IOStream: IOScreenCaptureUnitDelegate {
-    // MARK: IOScreenCaptureUnitDelegate
-    public func session(_ session: any IOScreenCaptureUnit, didOutput pixelBuffer: CVPixelBuffer, presentationTime: CMTime) {
-        var timingInfo = CMSampleTimingInfo(
-            duration: .invalid,
-            presentationTimeStamp: presentationTime,
-            decodeTimeStamp: .invalid
-        )
-        var videoFormatDescription: CMVideoFormatDescription?
-        var status = CMVideoFormatDescriptionCreateForImageBuffer(
-            allocator: kCFAllocatorDefault,
-            imageBuffer: pixelBuffer,
-            formatDescriptionOut: &videoFormatDescription
-        )
-        guard status == noErr else {
-            return
-        }
-        var sampleBuffer: CMSampleBuffer?
-        status = CMSampleBufferCreateForImageBuffer(
-            allocator: kCFAllocatorDefault,
-            imageBuffer: pixelBuffer,
-            dataReady: true,
-            makeDataReadyCallback: nil,
-            refcon: nil,
-            formatDescription: videoFormatDescription!,
-            sampleTiming: &timingInfo,
-            sampleBufferOut: &sampleBuffer
-        )
-        guard let sampleBuffer, status == noErr else {
-            return
-        }
-        append(sampleBuffer)
-    }
-}
-
-#if os(macOS)
-extension IOStream: SCStreamOutput {
-    @available(macOS 12.3, *)
-    public func stream(_ stream: SCStream, didOutputSampleBuffer sampleBuffer: CMSampleBuffer, of type: SCStreamOutputType) {
-        if #available(macOS 13.0, *) {
-            switch type {
-            case .screen:
-                append(sampleBuffer)
-            default:
-                append(sampleBuffer)
-            }
-        } else {
-            append(sampleBuffer)
-        }
-    }
-}
-#endif

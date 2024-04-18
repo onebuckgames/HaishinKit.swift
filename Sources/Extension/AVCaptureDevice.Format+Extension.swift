@@ -1,22 +1,20 @@
 import AVFoundation
 import Foundation
 
-#if os(iOS)
-extension AVCaptureDevice.Format {
-    @available(iOS, obsoleted: 13.0)
-    var isMultiCamSupported: Bool {
-        return false
-    }
-}
-#elseif os(macOS)
+#if os(macOS)
 extension AVCaptureDevice.Format {
     var isMultiCamSupported: Bool {
         return true
     }
 }
+#elseif os(visionOS)
+extension AVCaptureDevice.Format {
+    var isMultiCamSupported: Bool {
+        return false
+    }
+}
 #endif
 
-#if os(iOS) || os(tvOS) || os(macOS)
 @available(tvOS 17.0, *)
 extension AVCaptureDevice.Format {
     func isFrameRateSupported(_ frameRate: Float64) -> Bool {
@@ -42,4 +40,3 @@ extension AVCaptureDevice.Format {
         return false
     }
 }
-#endif

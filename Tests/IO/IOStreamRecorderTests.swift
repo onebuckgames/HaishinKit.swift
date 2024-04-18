@@ -5,11 +5,11 @@ import AVFoundation
 
 @testable import HaishinKit
 
-final class IORecorderTests: XCTestCase, IORecorderDelegate {
+final class IOStreamRecorderTests: XCTestCase, IOStreamRecorderDelegate {
     func testRecorder2channel() {
-        let recorder = IORecorder()
+        let recorder = IOStreamRecorder()
         recorder.delegate = self
-        recorder.outputSettings = [.audio: [
+        recorder.settings = [.audio: [
             AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
             AVSampleRateKey: 0,
             AVNumberOfChannelsKey: 0
@@ -29,9 +29,9 @@ final class IORecorderTests: XCTestCase, IORecorderDelegate {
     }
 
     func testRecorder4channel() {
-        let recorder = IORecorder()
+        let recorder = IOStreamRecorder()
         recorder.delegate = self
-        recorder.outputSettings = [.audio: [
+        recorder.settings = [.audio: [
             AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
             AVSampleRateKey: 0,
             AVNumberOfChannelsKey: 0
@@ -50,11 +50,11 @@ final class IORecorderTests: XCTestCase, IORecorderDelegate {
         sleep(1)
     }
 
-    func recorder(_ recorder: HaishinKit.IORecorder, errorOccured error: IORecorder.Error) {
+    func recorder(_ recorder: HaishinKit.IOStreamRecorder, errorOccured error: IOStreamRecorder.Error) {
         // print("recorder:errorOccured", error)
     }
 
-    func recorder(_ recorder: HaishinKit.IORecorder, finishWriting writer: AVAssetWriter) {
+    func recorder(_ recorder: HaishinKit.IOStreamRecorder, finishWriting writer: AVAssetWriter) {
         // print("recorder:finishWriting")
     }
 }
