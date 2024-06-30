@@ -440,7 +440,7 @@ open class RTMPStream: IOStream {
             metadata["audiocodecid"] = FLVAudioCodec.aac.rawValue
             metadata["audiodatarate"] = audioSettings.bitRate / 1000
             if let outputFormat = mixer.audioIO.outputFormat {
-                metadata["audiosamplerate"] = outputFormat.sampleRate
+                metadata["audiosamplerate"] = audioSettings.sampleRate
             }
         }
         return metadata
@@ -547,6 +547,23 @@ open class RTMPStream: IOStream {
             readyState = .playing
         case RTMPStream.Code.publishStart.rawValue:
             readyState = .publishing(muxer: muxer)
+        default:
+            break
+        }
+    }
+    
+    /// Append a CMSampleBuffer.
+    /// - Warning: This method can't use attachCamera or attachAudio method at the same time.
+    override public func append(_ sampleBuffer: CMSampleBuffer) {
+        switch sampleBuffer.formatDescription?._mediaType {
+        case kCMMediaType_Audio:
+            muxer.lockAudioQueue.async {
+                self.muxer.appendAudio(sampleBuffer)
+            }
+        case kCMMediaType_Video:
+            muxer.lockVideoQueue.async {
+                self.muxer.append(sampleBuffer)
+            }
         default:
             break
         }

@@ -376,11 +376,13 @@ open class IOStream: NSObject {
         switch sampleBuffer.formatDescription?.mediaType {
         case .audio?:
             mixer.audioIO.lockQueue.async {
-                self.mixer.audioIO.append(track, buffer: sampleBuffer)
+//                self.mixer.audioIO.append(track, buffer: sampleBuffer)
+                self.mixer.muxer?.append(sampleBuffer)
             }
         case .video?:
             mixer.videoIO.lockQueue.async {
-                self.mixer.videoIO.append(track, buffer: sampleBuffer)
+//                self.mixer.videoIO.append(track, buffer: sampleBuffer)
+                self.mixer.muxer?.append(sampleBuffer)
             }
         default:
             break

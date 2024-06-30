@@ -2,6 +2,10 @@ import AVFoundation
 
 // MARK: -
 final class RTMPMuxer {
+    /// The lockQueue.
+    public let lockAudioQueue: DispatchQueue = .init(label: "com.haishinkit.HaishinKit.RTMPMuxer.Audio.lock", qos: .userInitiated)
+    public let lockVideoQueue: DispatchQueue = .init(label: "com.haishinkit.HaishinKit.RTMPMuxer.Video.lock", qos: .userInitiated)
+
     static let aac: UInt8 = FLVAudioCodec.aac.rawValue << 4 | FLVSoundRate.kHz44.rawValue << 2 | FLVSoundSize.snd16bit.rawValue << 1 | FLVSoundType.stereo.rawValue
 
     var audioFormat: AVAudioFormat? {
@@ -149,6 +153,31 @@ final class RTMPMuxer {
 
 extension RTMPMuxer: IOMuxer {
     // MARK: IOMuxer
+
+    func appendAudio(_ sampleBuffer: CMSampleBuffer) {
+        if (nil == audioFormat) {
+            audioFormat = AVAudioFormat(cmAudioFormatDescription: sampleBuffer.formatDescription!)
+        }
+        
+        let when = AVAudioTime.init(hostTime: AVAudioTime.hostTime(forSeconds: sampleBuffer.presentationTimeStamp.seconds), sampleTime: sampleBuffer.presentationTimeStamp.value, atRate: audioFormat!.sampleRate)
+        
+        let delta = audioTimeStamp.hostTime == 0 ? 0 :
+            (AVAudioTime.seconds(forHostTime: when.hostTime) - AVAudioTime.seconds(forHostTime: audioTimeStamp.hostTime)) * 1000
+
+        guard 0 <= delta else {
+            return
+        }
+        
+        if let blockBuffer = sampleBuffer.dataBuffer, let blockData = blockBuffer.data {
+            var buffer = Data([RTMPMuxer.aac, FLVAACPacketType.raw.rawValue])
+            buffer.append(blockData)
+        
+            stream?.outputAudio(buffer, withTimestamp: delta)
+        }
+        
+        audioTimeStamp = when
+    }
+
     func append(_ audioBuffer: AVAudioBuffer, when: AVAudioTime) {
         guard let stream, let audioBuffer = audioBuffer as? AVAudioCompressedBuffer else {
             return
