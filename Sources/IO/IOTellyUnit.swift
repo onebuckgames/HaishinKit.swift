@@ -32,7 +32,7 @@ final class IOTellyUnit {
         return mediaLink.playerNode
     }
 
-    var delegate: (any IOTellyUnitDelegate)?
+    weak var delegate: (any IOTellyUnitDelegate)?
 
     private lazy var mediaLink = {
         var mediaLink = MediaLink<IOTellyUnit>()
@@ -54,9 +54,9 @@ extension IOTellyUnit: Running {
         guard isRunning.value else {
             return
         }
+        mediaLink.stopRunning()
         audioFormat = nil
         videoFormat = nil
-        mediaLink.stopRunning()
         isRunning.mutate { $0 = false }
     }
 }

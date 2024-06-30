@@ -62,7 +62,7 @@ final class NetStreamSwitcher {
             switch method {
             case .ingest:
                 // Performing operations for FMLE compatibility purposes.
-                (stream as? RTMPStream)?.fcPublishName = Preference.defaultInstance.streamName
+                (stream as? RTMPStream)?.fcPublishName = Preference.default.streamName
             case .playback:
                 break
             }
@@ -73,12 +73,18 @@ final class NetStreamSwitcher {
             guard let connection = connection as? SRTConnection, let stream = stream as? SRTStream else {
                 return
             }
-            connection.open(URL(string: uri))
-            switch method {
-            case .playback:
-                stream.play()
-            case .ingest:
-                stream.publish()
+            Task {
+                do {
+                    try await connection.open(URL(string: uri))
+                    switch method {
+                    case .playback:
+                        stream.play()
+                    case .ingest:
+                        stream.publish()
+                    }
+                } catch {
+                    logger.warn(error)
+                }
             }
         }
     }
@@ -93,11 +99,12 @@ final class NetStreamSwitcher {
             connection.removeEventListener(.rtmpStatus, selector: #selector(rtmpStatusHandler), observer: self)
             connection.removeEventListener(.ioError, selector: #selector(rtmpErrorHandler), observer: self)
         case .srt:
-            guard let connection = connection as? SRTConnection, let stream = stream as? SRTStream else {
+            guard let connection = connection as? SRTConnection else {
                 return
             }
-            stream.close()
-            connection.close()
+            Task {
+                await connection.close()
+            }
         }
     }
 
@@ -113,9 +120,9 @@ final class NetStreamSwitcher {
             retryCount = 0
             switch method {
             case .playback:
-                (stream as? RTMPStream)?.play(Preference.defaultInstance.streamName!)
+                (stream as? RTMPStream)?.play(Preference.default.streamName!)
             case .ingest:
-                (stream as? RTMPStream)?.publish(Preference.defaultInstance.streamName!)
+                (stream as? RTMPStream)?.publish(Preference.default.streamName!)
             }
         case RTMPConnection.Code.connectFailed.rawValue, RTMPConnection.Code.connectClosed.rawValue:
             guard retryCount <= NetStreamSwitcher.maxRetryCount else {
@@ -132,12 +139,18 @@ final class NetStreamSwitcher {
     @objc
     private func rtmpErrorHandler(_ notification: Notification) {
         logger.error(notification)
-        (connection as? RTMPConnection)?.connect(Preference.defaultInstance.uri!)
+        (connection as? RTMPConnection)?.connect(Preference.default.uri!)
     }
 }
 
 extension NetStreamSwitcher: IOStreamDelegate {
     // MARK: NetStreamDelegate
+    func stream(_ stream: IOStream, track: UInt8, didInput buffer: AVAudioBuffer, when: AVAudioTime) {
+    }
+
+    func stream(_ stream: IOStream, track: UInt8, didInput buffer: CMSampleBuffer) {
+    }
+
     /// Tells the receiver to video codec error occured.
     func stream(_ stream: IOStream, videoErrorOccurred error: IOVideoUnitError) {
     }

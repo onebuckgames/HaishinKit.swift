@@ -17,6 +17,7 @@ public enum IOAudioUnitError: Swift.Error {
 }
 
 protocol IOAudioUnitDelegate: AnyObject {
+    func audioUnit(_ audioUnit: IOAudioUnit, track: UInt8, didInput audioBuffer: AVAudioBuffer, when: AVAudioTime)
     func audioUnit(_ audioUnit: IOAudioUnit, errorOccurred error: IOAudioUnitError)
     func audioUnit(_ audioUnit: IOAudioUnit, didOutput audioBuffer: AVAudioPCMBuffer, when: AVAudioTime)
 }
@@ -24,8 +25,22 @@ protocol IOAudioUnitDelegate: AnyObject {
 final class IOAudioUnit: IOUnit {
     let lockQueue = DispatchQueue(label: "com.haishinkit.HaishinKit.IOAudioUnit.lock")
     weak var mixer: IOMixer?
-
-    var muted = false
+    var settings: AudioCodecSettings {
+        get {
+            codec.settings
+        }
+        set {
+            codec.settings = newValue
+        }
+    }
+    var mixerSettings: IOAudioMixerSettings {
+        get {
+            audioMixer.settings
+        }
+        set {
+            audioMixer.settings = newValue
+        }
+    }
     var isMonitoringEnabled = false {
         didSet {
             if isMonitoringEnabled {
@@ -35,16 +50,13 @@ final class IOAudioUnit: IOUnit {
             }
         }
     }
-    var settings: AudioCodecSettings = .default {
-        didSet {
-            codec.settings = settings
-            audioMixer.settings = settings.makeAudioMixerSettings()
-        }
-    }
+    var isMultiTrackAudioMixingEnabled = false
     var isRunning: Atomic<Bool> {
         return codec.isRunning
     }
-    private(set) var inputFormat: AVAudioFormat?
+    var inputFormats: [UInt8: AVAudioFormat] {
+        return audioMixer.inputFormats
+    }
     var outputFormat: AVAudioFormat? {
         return codec.outputFormat
     }
@@ -54,12 +66,12 @@ final class IOAudioUnit: IOUnit {
         return codec
     }()
     private lazy var audioMixer: any IOAudioMixerConvertible = {
-        if FeatureUtil.isEnabled(for: .multiTrackAudioMixing) {
-            var audioMixer = IOAudioMixerConvertibleByMultiTrack()
+        if isMultiTrackAudioMixingEnabled {
+            var audioMixer = IOAudioMixerByMultiTrack()
             audioMixer.delegate = self
             return audioMixer
         } else {
-            var audioMixer = IOAudioMixerConvertibleBySingleTrack()
+            var audioMixer = IOAudioMixerBySingleTrack()
             audioMixer.delegate = self
             return audioMixer
         }
@@ -71,13 +83,13 @@ final class IOAudioUnit: IOUnit {
     var captures: [UInt8: IOAudioCaptureUnit] {
         return _captures as! [UInt8: IOAudioCaptureUnit]
     }
-    #elseif os(iOS) || os(macOS) || os(visionOS)
+    #elseif os(iOS) || os(macOS)
     var captures: [UInt8: IOAudioCaptureUnit] = [:]
     #endif
 
     #if os(iOS) || os(macOS) || os(tvOS)
     @available(tvOS 17.0, *)
-    func attachAudio(_ device: AVCaptureDevice?, track: UInt8, configuration: (_ capture: IOAudioCaptureUnit?) -> Void) throws {
+    func attachAudio(_ track: UInt8, device: AVCaptureDevice?, configuration: (_ capture: IOAudioCaptureUnit?) -> Void) throws {
         try mixer?.session.configuration { _ in
             mixer?.session.detachCapture(captures[track])
             guard let device else {
@@ -89,32 +101,6 @@ final class IOAudioUnit: IOUnit {
             configuration(capture)
             capture?.setSampleBufferDelegate(self)
             mixer?.session.attachCapture(capture)
-        }
-    }
-    #endif
-
-    func append(_ sampleBuffer: CMSampleBuffer, track: UInt8 = 0) {
-        switch sampleBuffer.formatDescription?.audioStreamBasicDescription?.mFormatID {
-        case kAudioFormatLinearPCM:
-            audioMixer.append(sampleBuffer, track: track)
-        default:
-            if codec.inputFormat?.formatDescription != sampleBuffer.formatDescription {
-                if var asbd = sampleBuffer.formatDescription?.audioStreamBasicDescription {
-                    codec.inputFormat = AVAudioFormat.init(streamDescription: &asbd)
-                }
-            }
-            codec.append(sampleBuffer)
-        }
-    }
-
-    func append(_ audioBuffer: AVAudioBuffer, when: AVAudioTime, track: UInt8 = 0) {
-        switch audioBuffer {
-        case let audioBuffer as AVAudioPCMBuffer:
-            audioMixer.append(audioBuffer, when: when, track: track)
-        case let audioBuffer as AVAudioCompressedBuffer:
-            codec.append(audioBuffer, when: when)
-        default:
-            break
         }
     }
 
@@ -137,6 +123,27 @@ final class IOAudioUnit: IOUnit {
         return captures[track]
         #endif
     }
+    #endif
+
+    func append(_ track: UInt8, buffer: CMSampleBuffer) {
+        switch buffer.formatDescription?.mediaSubType {
+        case .linearPCM?:
+            audioMixer.append(track, buffer: buffer)
+        default:
+            codec.append(buffer)
+        }
+    }
+
+    func append(_ track: UInt8, buffer: AVAudioBuffer, when: AVAudioTime) {
+        switch buffer {
+        case let buffer as AVAudioPCMBuffer:
+            audioMixer.append(track, buffer: buffer, when: when)
+        case let buffer as AVAudioCompressedBuffer:
+            codec.append(buffer, when: when)
+        default:
+            break
+        }
+    }
 }
 
 extension IOAudioUnit: Running {
@@ -152,20 +159,19 @@ extension IOAudioUnit: Running {
 
 extension IOAudioUnit: IOAudioMixerDelegate {
     // MARK: IOAudioMixerDelegate
-    func audioMixer(_ audioMixer: any IOAudioMixerConvertible, errorOccurred error: IOAudioUnitError) {
+    func audioMixer(_ audioMixer: some IOAudioMixerConvertible, track: UInt8, didInput buffer: AVAudioPCMBuffer, when: AVAudioTime) {
+        mixer?.audioUnit(self, track: track, didInput: buffer, when: when)
+    }
+
+    func audioMixer(_ audioMixer: some IOAudioMixerConvertible, errorOccurred error: IOAudioUnitError) {
         mixer?.audioUnit(self, errorOccurred: error)
     }
 
-    func audioMixer(_ audioMixer: any IOAudioMixerConvertible, didOutput audioFormat: AVAudioFormat) {
-        inputFormat = audioMixer.inputFormat
-        codec.inputFormat = audioFormat
+    func audioMixer(_ audioMixer: some IOAudioMixerConvertible, didOutput audioFormat: AVAudioFormat) {
         monitor.inputFormat = audioFormat
     }
 
-    func audioMixer(_ audioMixer: any IOAudioMixerConvertible, didOutput audioBuffer: AVAudioPCMBuffer, when: AVAudioTime) {
-        if muted {
-            audioBuffer.muted()
-        }
+    func audioMixer(_ audioMixer: some IOAudioMixerConvertible, didOutput audioBuffer: AVAudioPCMBuffer, when: AVAudioTime) {
         mixer?.audioUnit(self, didOutput: audioBuffer, when: when)
         monitor.append(audioBuffer, when: when)
         codec.append(audioBuffer, when: when)

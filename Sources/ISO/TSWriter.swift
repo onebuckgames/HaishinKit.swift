@@ -8,151 +8,166 @@ import SwiftPMSupport
 
 /// The interface an MPEG-2 TS (Transport Stream) writer uses to inform its delegates.
 public protocol TSWriterDelegate: AnyObject {
-    func writer(_ writer: TSWriter, didRotateFileHandle timestamp: CMTime)
-    func writer(_ writer: TSWriter, didOutput data: Data)
+    func writer(_ writer: TSWriter<Self>, didRotateFileHandle timestamp: CMTime)
+    func writer(_ writer: TSWriter<Self>, didOutput data: Data)
 }
 
+private let kTSWriter_defaultPATPID: UInt16 = 0
+private let kTSWriter_defaultPMTPID: UInt16 = 4095
+private let kTSWriter_defaultVideoPID: UInt16 = 256
+private let kTSWriter_defaultAudioPID: UInt16 = 257
+private let kTSWriter_defaultSegmentDuration: Double = 2
+
 /// The TSWriter class represents writes MPEG-2 transport stream data.
-public final class TSWriter {
-    public static let defaultPATPID: UInt16 = 0
-    public static let defaultPMTPID: UInt16 = 4095
-    public static let defaultVideoPID: UInt16 = 256
-    public static let defaultAudioPID: UInt16 = 257
-
-    public static let defaultSegmentDuration: Double = 2
-
-    /// The delegate instance.
-    public weak var delegate: (any TSWriterDelegate)?
-    /// This instance is running to process(true) or not(false).
-    public internal(set) var isRunning: Atomic<Bool> = .init(false)
-    /// The exptected medias = [.video, .audio].
+public final class TSWriter<T: TSWriterDelegate> {
+    /// Specifies the delegate instance.
+    public weak var delegate: T?
+    /// Specifies the exptected medias = [.video, .audio].
     public var expectedMedias: Set<AVMediaType> = []
-
+    /// Specifies the audio format.
     public var audioFormat: AVAudioFormat? {
         didSet {
-            guard let audioFormat else {
+            guard let audioFormat, audioFormat != oldValue else {
                 return
             }
             var data = ESSpecificData()
-            data.streamType = .adtsAac
-            data.elementaryPID = TSWriter.defaultAudioPID
-            PMT.elementaryStreamSpecificData.append(data)
+            data.streamType = audioFormat.formatDescription.streamType
+            data.elementaryPID = kTSWriter_defaultAudioPID
+            pmt.elementaryStreamSpecificData.append(data)
             audioContinuityCounter = 0
-            audioConfig = AudioSpecificConfig(formatDescription: audioFormat.formatDescription)
+            writeProgramIfNeeded()
         }
     }
-
+    /// Specifies the video format.
     public var videoFormat: CMFormatDescription? {
         didSet {
-            guard
-                let videoFormat,
-                let avcC = AVCDecoderConfigurationRecord.getData(videoFormat) else {
+            guard let videoFormat, videoFormat != oldValue else {
                 return
             }
             var data = ESSpecificData()
-            data.streamType = .h264
-            data.elementaryPID = TSWriter.defaultVideoPID
-            PMT.elementaryStreamSpecificData.append(data)
+            data.streamType = videoFormat.streamType
+            data.elementaryPID = kTSWriter_defaultVideoPID
+            pmt.elementaryStreamSpecificData.append(data)
             videoContinuityCounter = 0
-            videoConfig = AVCDecoderConfigurationRecord(data: avcC)
+            writeProgramIfNeeded()
         }
     }
 
-    var audioContinuityCounter: UInt8 = 0
-    var videoContinuityCounter: UInt8 = 0
-    var PCRPID: UInt16 = TSWriter.defaultVideoPID
-    var rotatedTimestamp = CMTime.zero
-    var segmentDuration: Double = TSWriter.defaultSegmentDuration
-    let lockQueue = DispatchQueue(label: "com.haishinkit.HaishinKit.TSWriter.lock")
-
-    private(set) var PAT: TSProgramAssociation = {
+    private(set) var pat: TSProgramAssociation = {
         let PAT: TSProgramAssociation = .init()
-        PAT.programs = [1: TSWriter.defaultPMTPID]
+        PAT.programs = [1: kTSWriter_defaultPMTPID]
         return PAT
     }()
-    private(set) var PMT: TSProgramMap = .init()
-    private var audioConfig: AudioSpecificConfig? {
-        didSet {
-            writeProgramIfNeeded()
-        }
-    }
-    private var videoConfig: AVCDecoderConfigurationRecord? {
-        didSet {
-            writeProgramIfNeeded()
-        }
-    }
-    private var videoTimestamp: CMTime = .invalid
-    private var audioTimestamp: CMTime = .invalid
-    private var PCRTimestamp = CMTime.zero
+    private(set) var pmt: TSProgramMap = .init()
+    private var pcrPID: UInt16 = kTSWriter_defaultVideoPID
     private var canWriteFor: Bool {
         guard !expectedMedias.isEmpty else {
             return true
         }
         if expectedMedias.contains(.audio) && expectedMedias.contains(.video) {
-            return audioConfig != nil && videoConfig != nil
+            return audioFormat != nil && videoFormat != nil
         }
         if expectedMedias.contains(.video) {
-            return videoConfig != nil
+            return videoFormat != nil
         }
         if expectedMedias.contains(.audio) {
-            return audioConfig != nil
+            return audioFormat != nil
         }
         return false
     }
+    private var videoTimeStamp: CMTime = .invalid
+    private var audioTimeStamp: CMTime = .invalid
+    private var clockTimeStamp: CMTime = .zero
+    private var segmentDuration: Double = kTSWriter_defaultSegmentDuration
+    private var rotatedTimeStamp: CMTime = .zero
+    private var audioContinuityCounter: UInt8 = 0
+    private var videoContinuityCounter: UInt8 = 0
 
-    public init(segmentDuration: Double = TSWriter.defaultSegmentDuration) {
+    /// Creates a new instance with segument duration.
+    public init(segmentDuration: Double = 2.0) {
         self.segmentDuration = segmentDuration
     }
 
-    // swiftlint:disable:next function_parameter_count
-    final func writeSampleBuffer(_ PID: UInt16, streamID: UInt8, bytes: UnsafePointer<UInt8>?, count: UInt32, presentationTimeStamp: CMTime, decodeTimeStamp: CMTime, randomAccessIndicator: Bool) {
+    /// Appends a buffer.
+    public func append(_ audioBuffer: AVAudioBuffer, when: AVAudioTime) {
+        guard let audioBuffer = audioBuffer as? AVAudioCompressedBuffer, canWriteFor else {
+            return
+        }
+        if audioTimeStamp == .invalid {
+            audioTimeStamp = when.makeTime()
+            if pcrPID == kTSWriter_defaultAudioPID {
+                clockTimeStamp = audioTimeStamp
+            }
+        }
+        if var pes = PacketizedElementaryStream(audioBuffer, when: when, timeStamp: audioTimeStamp) {
+            pes.streamID = 192
+            writePacketizedElementaryStream(
+                kTSWriter_defaultAudioPID,
+                PES: pes,
+                timeStamp: when.makeTime(),
+                randomAccessIndicator: true
+            )
+        }
+    }
+
+    /// Appends a buffer.
+    public func append(_ sampleBuffer: CMSampleBuffer) {
         guard canWriteFor else {
             return
         }
-
-        switch PID {
-        case TSWriter.defaultAudioPID:
-            guard audioTimestamp == .invalid else { break }
-            audioTimestamp = presentationTimeStamp
-            if PCRPID == PID {
-                PCRTimestamp = presentationTimeStamp
+        switch sampleBuffer.formatDescription?.mediaType {
+        case .video?:
+            if videoTimeStamp == .invalid {
+                videoTimeStamp = sampleBuffer.presentationTimeStamp
+                if pcrPID == kTSWriter_defaultVideoPID {
+                    clockTimeStamp = videoTimeStamp
+                }
             }
-        case TSWriter.defaultVideoPID:
-            guard videoTimestamp == .invalid else { break }
-            videoTimestamp = presentationTimeStamp
-            if PCRPID == PID {
-                PCRTimestamp = presentationTimeStamp
+            if var pes = PacketizedElementaryStream(sampleBuffer, timeStamp: videoTimeStamp) {
+                let timestamp = sampleBuffer.decodeTimeStamp == .invalid ?
+                    sampleBuffer.presentationTimeStamp : sampleBuffer.decodeTimeStamp
+                pes.streamID = 224
+                writePacketizedElementaryStream(
+                    kTSWriter_defaultVideoPID,
+                    PES: pes,
+                    timeStamp: timestamp,
+                    randomAccessIndicator: !sampleBuffer.isNotSync
+                )
             }
         default:
             break
         }
+    }
 
-        guard var PES = PacketizedElementaryStream.create(
-                bytes,
-                count: count,
-                presentationTimeStamp: presentationTimeStamp,
-                decodeTimeStamp: decodeTimeStamp,
-                timestamp: PID == TSWriter.defaultVideoPID ? videoTimestamp : audioTimestamp,
-                config: streamID == 192 ? audioConfig : videoConfig,
-                randomAccessIndicator: randomAccessIndicator) else {
-            return
-        }
+    /// Clears the writer object for new transport stream.
+    public func clear() {
+        audioFormat = nil
+        audioContinuityCounter = 0
+        videoFormat = nil
+        videoContinuityCounter = 0
+        pcrPID = kTSWriter_defaultVideoPID
+        pat.programs.removeAll()
+        pat.programs = [1: kTSWriter_defaultPMTPID]
+        pmt = TSProgramMap()
+        videoTimeStamp = .invalid
+        audioTimeStamp = .invalid
+        clockTimeStamp = .zero
+        rotatedTimeStamp = .zero
+    }
 
-        PES.streamID = streamID
-
-        let timestamp = decodeTimeStamp == .invalid ? presentationTimeStamp : decodeTimeStamp
-        let packets: [TSPacket] = split(PID, PES: PES, timestamp: timestamp)
-        rotateFileHandle(timestamp)
+    private func writePacketizedElementaryStream(_ PID: UInt16, PES: PacketizedElementaryStream, timeStamp: CMTime, randomAccessIndicator: Bool) {
+        let packets: [TSPacket] = split(PID, PES: PES, timestamp: timeStamp)
+        rotateFileHandle(timeStamp)
 
         packets[0].adaptationField?.randomAccessIndicator = randomAccessIndicator
 
         var bytes = Data()
         for var packet in packets {
             switch PID {
-            case TSWriter.defaultAudioPID:
+            case kTSWriter_defaultAudioPID:
                 packet.continuityCounter = audioContinuityCounter
                 audioContinuityCounter = (audioContinuityCounter + 1) & 0x0f
-            case TSWriter.defaultVideoPID:
+            case kTSWriter_defaultVideoPID:
                 packet.continuityCounter = videoContinuityCounter
                 videoContinuityCounter = (videoContinuityCounter + 1) & 0x0f
             default:
@@ -164,33 +179,33 @@ public final class TSWriter {
         write(bytes)
     }
 
-    func rotateFileHandle(_ timestamp: CMTime) {
-        let duration: Double = timestamp.seconds - rotatedTimestamp.seconds
-        if duration <= segmentDuration {
+    private func rotateFileHandle(_ timestamp: CMTime) {
+        let duration = timestamp.seconds - rotatedTimeStamp.seconds
+        guard segmentDuration < duration else {
             return
         }
         writeProgramIfNeeded()
-        rotatedTimestamp = timestamp
+        rotatedTimeStamp = timestamp
         delegate?.writer(self, didRotateFileHandle: timestamp)
     }
 
-    func write(_ data: Data) {
+    private func write(_ data: Data) {
         delegate?.writer(self, didOutput: data)
     }
 
-    final func writeProgram() {
-        PMT.PCRPID = PCRPID
+    private func writeProgram() {
+        pmt.PCRPID = pcrPID
         var bytes = Data()
         var packets: [TSPacket] = []
-        packets.append(contentsOf: PAT.arrayOfPackets(TSWriter.defaultPATPID))
-        packets.append(contentsOf: PMT.arrayOfPackets(TSWriter.defaultPMTPID))
+        packets.append(contentsOf: pat.arrayOfPackets(kTSWriter_defaultPATPID))
+        packets.append(contentsOf: pmt.arrayOfPackets(kTSWriter_defaultPMTPID))
         for packet in packets {
             bytes.append(packet.data)
         }
         write(bytes)
     }
 
-    final func writeProgramIfNeeded() {
+    private func writeProgramIfNeeded() {
         guard !expectedMedias.isEmpty else {
             return
         }
@@ -202,83 +217,15 @@ public final class TSWriter {
 
     private func split(_ PID: UInt16, PES: PacketizedElementaryStream, timestamp: CMTime) -> [TSPacket] {
         var PCR: UInt64?
-        let duration: Double = timestamp.seconds - PCRTimestamp.seconds
-        if PCRPID == PID && 0.02 <= duration {
-            PCR = UInt64((timestamp.seconds - (PID == TSWriter.defaultVideoPID ? videoTimestamp : audioTimestamp).seconds) * TSTimestamp.resolution)
-            PCRTimestamp = timestamp
+        let duration: Double = timestamp.seconds - clockTimeStamp.seconds
+        if pcrPID == PID && 0.02 <= duration {
+            PCR = UInt64((timestamp.seconds - (PID == kTSWriter_defaultVideoPID ? videoTimeStamp : audioTimeStamp).seconds) * TSTimestamp.resolution)
+            clockTimeStamp = timestamp
         }
         var packets: [TSPacket] = []
         for packet in PES.arrayOfPackets(PID, PCR: PCR) {
             packets.append(packet)
         }
         return packets
-    }
-}
-
-extension TSWriter: IOMuxer {
-    // IOMuxer
-    public func append(_ audioBuffer: AVAudioBuffer, when: AVAudioTime) {
-        guard let audioBuffer = audioBuffer as? AVAudioCompressedBuffer else {
-            return
-        }
-        writeSampleBuffer(
-            TSWriter.defaultAudioPID,
-            streamID: 192,
-            bytes: audioBuffer.data.assumingMemoryBound(to: UInt8.self),
-            count: audioBuffer.byteLength,
-            presentationTimeStamp: when.makeTime(),
-            decodeTimeStamp: .invalid,
-            randomAccessIndicator: true
-        )
-    }
-
-    public func append(_ sampleBuffer: CMSampleBuffer) {
-        guard let dataBuffer = sampleBuffer.dataBuffer else {
-            return
-        }
-        var length = 0
-        var buffer: UnsafeMutablePointer<Int8>?
-        guard CMBlockBufferGetDataPointer(dataBuffer, atOffset: 0, lengthAtOffsetOut: nil, totalLengthOut: &length, dataPointerOut: &buffer) == noErr else {
-            return
-        }
-        guard let bytes = buffer else {
-            return
-        }
-        writeSampleBuffer(
-            TSWriter.defaultVideoPID,
-            streamID: 224,
-            bytes: UnsafeRawPointer(bytes).bindMemory(to: UInt8.self, capacity: length),
-            count: UInt32(length),
-            presentationTimeStamp: sampleBuffer.presentationTimeStamp,
-            decodeTimeStamp: sampleBuffer.decodeTimeStamp,
-            randomAccessIndicator: !sampleBuffer.isNotSync
-        )
-    }
-}
-
-extension TSWriter: Running {
-    public func startRunning() {
-        guard isRunning.value else {
-            return
-        }
-        isRunning.mutate { $0 = true }
-    }
-
-    public func stopRunning() {
-        guard !isRunning.value else {
-            return
-        }
-        audioContinuityCounter = 0
-        videoContinuityCounter = 0
-        PCRPID = TSWriter.defaultVideoPID
-        PAT.programs.removeAll()
-        PAT.programs = [1: TSWriter.defaultPMTPID]
-        PMT = TSProgramMap()
-        audioConfig = nil
-        videoConfig = nil
-        videoTimestamp = .invalid
-        audioTimestamp = .invalid
-        PCRTimestamp = .invalid
-        isRunning.mutate { $0 = false }
     }
 }

@@ -18,10 +18,6 @@ protocol VideoCodecDelegate: AnyObject {
 }
 
 private let kVideoCodec_defaultFrameInterval: Double = 0.0
-private let kVideoCodec_defaultAttributes: [NSString: AnyObject]? = [
-    kCVPixelBufferIOSurfacePropertiesKey: NSDictionary(),
-    kCVPixelBufferMetalCompatibilityKey: kCFBooleanTrue
-]
 
 // MARK: -
 /**
@@ -52,15 +48,16 @@ final class VideoCodec<T: VideoCodecDelegate> {
     private var startedAt: CMTime = .zero
     private(set) var inputFormat: CMFormatDescription? {
         didSet {
-            guard !CMFormatDescriptionEqual(inputFormat, otherFormatDescription: oldValue) else {
+            guard inputFormat != oldValue else {
                 return
             }
+            invalidateSession = true
             outputFormat = nil
         }
     }
     private(set) var outputFormat: CMFormatDescription? {
         didSet {
-            guard !CMFormatDescriptionEqual(outputFormat, otherFormatDescription: oldValue) else {
+            guard outputFormat != oldValue else {
                 return
             }
             delegate?.videoCodec(self, didOutput: outputFormat)

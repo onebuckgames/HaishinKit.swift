@@ -1,3 +1,4 @@
+import Accelerate
 import AVFoundation
 
 extension AVAudioPCMBuffer {
@@ -34,7 +35,7 @@ extension AVAudioPCMBuffer {
     }
 
     @discardableResult
-    @inline(__always)
+    @inlinable
     final func copy(_ audioBuffer: AVAudioBuffer) -> Bool {
         guard let audioBuffer = audioBuffer as? AVAudioPCMBuffer, frameLength == audioBuffer.frameLength else {
             return false
@@ -69,7 +70,12 @@ extension AVAudioPCMBuffer {
         return true
     }
 
-    final func muted() {
+    @discardableResult
+    @inlinable
+    final func muted(_ isMuted: Bool) -> AVAudioPCMBuffer {
+        guard isMuted else {
+            return self
+        }
         let numSamples = Int(frameLength)
         if format.isInterleaved {
             let channelCount = Int(format.channelCount)
@@ -97,5 +103,6 @@ extension AVAudioPCMBuffer {
                 }
             }
         }
+        return self
     }
 }

@@ -66,7 +66,7 @@ public class PiPHKView: UIView {
 
     private weak var currentStream: IOStream? {
         didSet {
-            currentStream?.drawable = self
+            currentStream?.view = self
         }
     }
 
@@ -93,10 +93,6 @@ public class PiPHKView: UIView {
         super.init(coder: aDecoder)
     }
 
-    deinit {
-        attachStream(nil)
-    }
-
     /// Prepares the receiver for service after it has been loaded from an Interface Builder archive, or nib file.
     override public func awakeFromNib() {
         super.awakeFromNib()
@@ -107,7 +103,7 @@ public class PiPHKView: UIView {
 }
 
 extension PiPHKView: IOStreamView {
-    // MARK: NetStreamDrawable
+    // MARK: IOStreamView
     public func attachStream(_ stream: IOStream?) {
         if Thread.isMainThread {
             currentStream = stream
@@ -193,7 +189,7 @@ public class PiPHKView: NSView {
 
     private weak var currentStream: IOStream? {
         didSet {
-            currentStream?.drawable = self
+            currentStream?.view = self
         }
     }
 
@@ -208,10 +204,6 @@ public class PiPHKView: NSView {
         super.init(coder: aDecoder)
     }
 
-    deinit {
-        attachStream(nil)
-    }
-
     /// Prepares the receiver for service after it has been loaded from an Interface Builder archive, or nib file.
     override public func awakeFromNib() {
         super.awakeFromNib()
@@ -223,7 +215,7 @@ public class PiPHKView: NSView {
 }
 
 extension PiPHKView: IOStreamView {
-    // MARK: NetStreamDrawable
+    // MARK: IOStreamView
     public func attachStream(_ stream: IOStream?) {
         if Thread.isMainThread {
             currentStream = stream

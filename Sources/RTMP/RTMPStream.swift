@@ -138,7 +138,7 @@ open class RTMPStream: IOStream {
     }
 
     /// The type of publish options.
-    public enum HowToPublish: String {
+    public enum HowToPublish: String, Sendable {
         /// Publish with server-side recording.
         case record
         /// Publish with server-side recording which is to append file if exists.
@@ -150,8 +150,18 @@ open class RTMPStream: IOStream {
     }
 
     private struct PausedStatus {
-        let hasAudio: Bool
-        let hasVideo: Bool
+        let audioIsMuted: Bool
+        let videoIsMuted: Bool
+
+        init(_ stream: IOStream) {
+            audioIsMuted = stream.audioMixerSettings.isMuted
+            videoIsMuted = stream.videoMixerSettings.isMuted
+        }
+
+        func restore(_ stream: IOStream) {
+            stream.audioMixerSettings.isMuted = audioIsMuted
+            stream.videoMixerSettings.isMuted = videoIsMuted
+        }
     }
 
     static let defaultID: UInt32 = 0
@@ -172,7 +182,7 @@ open class RTMPStream: IOStream {
                 guard self.readyState == .playing else {
                     return
                 }
-                self.connection?.socket?.doOutput(chunk: RTMPChunk(message: RTMPCommandMessage(
+                self.connection?.doOutput(chunk: RTMPChunk(message: RTMPCommandMessage(
                     streamId: self.id,
                     transactionId: 0,
                     objectEncoding: self.objectEncoding,
@@ -190,7 +200,7 @@ open class RTMPStream: IOStream {
                 guard self.readyState == .playing else {
                     return
                 }
-                self.connection?.socket?.doOutput(chunk: RTMPChunk(message: RTMPCommandMessage(
+                self.connection?.doOutput(chunk: RTMPChunk(message: RTMPCommandMessage(
                     streamId: self.id,
                     transactionId: 0,
                     objectEncoding: self.objectEncoding,
@@ -208,15 +218,14 @@ open class RTMPStream: IOStream {
                 switch self.readyState {
                 case .publish, .publishing:
                     if self.paused {
-                        self.pausedStatus = .init(hasAudio: self.hasAudio, hasVideo: self.hasVideo)
-                        self.hasAudio = false
-                        self.hasVideo = false
+                        self.pausedStatus = .init(self)
+                        self.audioMixerSettings.isMuted = true
+                        self.videoMixerSettings.isMuted = true
                     } else {
-                        self.hasAudio = self.pausedStatus.hasAudio
-                        self.hasVideo = self.pausedStatus.hasVideo
+                        self.pausedStatus.restore(self)
                     }
                 case .play, .playing:
-                    self.connection?.socket?.doOutput(chunk: RTMPChunk(message: RTMPCommandMessage(
+                    self.connection?.doOutput(chunk: RTMPChunk(message: RTMPCommandMessage(
                         streamId: self.id,
                         transactionId: 0,
                         objectEncoding: self.objectEncoding,
@@ -239,9 +248,15 @@ open class RTMPStream: IOStream {
         return RTMPMuxer(self)
     }()
     private var messages: [RTMPCommandMessage] = []
-    private var startedAt = Date()
-    private var dispatcher: (any EventDispatcherConvertible)!
-    private var pausedStatus = PausedStatus(hasAudio: false, hasVideo: false)
+    private var startedAt = Date() {
+        didSet {
+            dataTimestamps.removeAll()
+        }
+    }
+    private lazy var dispatcher: EventDispatcher = {
+        EventDispatcher(target: self)
+    }()
+    private lazy var pausedStatus = PausedStatus(self)
     private var howToPublish: RTMPStream.HowToPublish = .live
     private var dataTimestamps: [String: Date] = .init()
     private weak var connection: RTMPConnection?
@@ -251,8 +266,7 @@ open class RTMPStream: IOStream {
         self.connection = connection
         super.init()
         self.fcPublishName = fcPublishName
-        dispatcher = EventDispatcher(target: self)
-        connection.streams.append(self)
+        connection.addStream(self)
         addEventListener(.rtmpStatus, selector: #selector(on(status:)), observer: self)
         connection.addEventListener(.rtmpStatus, selector: #selector(on(status:)), observer: self)
         if connection.connected {
@@ -297,7 +311,7 @@ open class RTMPStream: IOStream {
                 self.messages.append(message)
             default:
                 self.readyState = .play
-                self.connection?.socket?.doOutput(chunk: RTMPChunk(message: message))
+                self.connection?.doOutput(chunk: RTMPChunk(message: message))
             }
         }
     }
@@ -308,7 +322,7 @@ open class RTMPStream: IOStream {
             guard self.readyState == .playing else {
                 return
             }
-            self.connection?.socket?.doOutput(chunk: RTMPChunk(message: RTMPCommandMessage(
+            self.connection?.doOutput(chunk: RTMPChunk(message: RTMPCommandMessage(
                 streamId: self.id,
                 transactionId: 0,
                 objectEncoding: self.objectEncoding,
@@ -355,7 +369,7 @@ open class RTMPStream: IOStream {
                 self.messages.append(message)
             default:
                 self.readyState = .publish
-                self.connection?.socket?.doOutput(chunk: RTMPChunk(message: message))
+                self.connection?.doOutput(chunk: RTMPChunk(message: message))
             }
         }
     }
@@ -405,8 +419,10 @@ open class RTMPStream: IOStream {
 
     /// Creates flv metadata for a stream.
     open func makeMetaData() -> ASObject {
-        var metadata: [String: Any] = [:]
-        if videoInputFormat != nil {
+        var metadata: [String: Any] = [
+            "duration": 0
+        ]
+        if !videoInputFormats.isEmpty {
             metadata["width"] = videoSettings.videoSize.width
             metadata["height"] = videoSettings.videoSize.height
             #if os(iOS) || os(macOS) || os(tvOS)
@@ -420,7 +436,7 @@ open class RTMPStream: IOStream {
             }
             metadata["videodatarate"] = videoSettings.bitRate / 1000
         }
-        if audioInputFormat != nil {
+        if !audioInputFormats.isEmpty {
             metadata["audiocodecid"] = FLVAudioCodec.aac.rawValue
             metadata["audiodatarate"] = audioSettings.bitRate / 1000
             if let outputFormat = mixer.audioIO.outputFormat {
@@ -443,9 +459,8 @@ open class RTMPStream: IOStream {
             metadata.removeAll()
             info.clear()
             for message in messages {
-                connection.currentTransactionId += 1
                 message.streamId = id
-                message.transactionId = connection.currentTransactionId
+                message.transactionId = connection.newTransaction
                 switch message.commandName {
                 case "play":
                     self.readyState = .play
@@ -454,18 +469,18 @@ open class RTMPStream: IOStream {
                 default:
                     break
                 }
-                connection.socket?.doOutput(chunk: RTMPChunk(message: message))
+                connection.doOutput(chunk: RTMPChunk(message: message))
             }
             messages.removeAll()
-        case .play:
+        case .playing:
             startedAt = .init()
         case .publish:
             bitrateStrategy.setUp()
             startedAt = .init()
-            dataTimestamps.removeAll()
         case .publishing:
+            startedAt = .init()
             let metadata = makeMetaData()
-            send(handlerName: "@setDataFrame", arguments: "onMetaData", metadata)
+            send(handlerName: "@setDataFrame", arguments: "onMetaData", ASArray(metadata))
             self.metadata = metadata
         default:
             break
@@ -487,29 +502,26 @@ open class RTMPStream: IOStream {
         if let fcPublishName {
             connection.call("FCUnpublish", responder: nil, arguments: fcPublishName)
         }
-        connection.socket?.doOutput(chunk: RTMPChunk(
-                                        type: .zero,
-                                        streamId: RTMPChunk.StreamID.command.rawValue,
-                                        message: RTMPCommandMessage(
-                                            streamId: 0,
-                                            transactionId: 0,
-                                            objectEncoding: self.objectEncoding,
-                                            commandName: "closeStream",
-                                            commandObject: nil,
-                                            arguments: [self.id]
-                                        )))
+        connection.doOutput(chunk: RTMPChunk(
+                                type: .zero,
+                                streamId: RTMPChunk.StreamID.command.rawValue,
+                                message: RTMPCommandMessage(
+                                    streamId: 0,
+                                    transactionId: 0,
+                                    objectEncoding: self.objectEncoding,
+                                    commandName: "closeStream",
+                                    commandObject: nil,
+                                    arguments: [self.id]
+                                )))
     }
 
     func doOutput(_ type: RTMPChunkType, chunkStreamId: UInt16, message: RTMPMessage) {
-        guard let socket = connection?.socket else {
-            return
-        }
         message.streamId = id
-        let length = socket.doOutput(chunk: .init(
+        let length = connection?.doOutput(chunk: .init(
             type: type,
             streamId: chunkStreamId,
             message: message
-        ))
+        )) ?? 0
         info.byteCount.mutate { $0 += Int64(length) }
     }
 
@@ -542,7 +554,7 @@ open class RTMPStream: IOStream {
 }
 
 extension RTMPStream: EventDispatcherConvertible {
-    // MARK: IEventDispatcher
+    // MARK: EventDispatcherConvertible
     public func addEventListener(_ type: Event.Name, selector: Selector, observer: AnyObject? = nil, useCapture: Bool = false) {
         dispatcher.addEventListener(type, selector: selector, observer: observer, useCapture: useCapture)
     }

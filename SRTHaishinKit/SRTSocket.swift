@@ -3,7 +3,6 @@ import HaishinKit
 import libsrt
 import Logboard
 
-private let kSRTSocket_defaultOptions: [SRTSocketOption: Any] = [:]
 private let kSRTSOcket_payloadSize: Int = 1316
 
 protocol SRTSocketDelegate: AnyObject {
@@ -69,10 +68,9 @@ final class SRTSocket<T: SRTSocketDelegate> {
         if incomingBuffer.count < windowSizeC {
             incomingBuffer = .init(count: Int(windowSizeC))
         }
-        startRunning()
     }
 
-    func open(_ addr: sockaddr_in, mode: SRTMode, options: [SRTSocketOption: Any] = kSRTSocket_defaultOptions) throws {
+    func open(_ addr: sockaddr_in, mode: SRTMode, options: [SRTSocketOption: Any] = [:]) throws {
         guard socket == SRT_INVALID_SOCK else {
             return
         }
@@ -114,6 +112,15 @@ final class SRTSocket<T: SRTSocketDelegate> {
         startRunning()
     }
 
+    func close() {
+        guard socket != SRT_INVALID_SOCK else {
+            return
+        }
+        srt_close(socket)
+        socket = SRT_INVALID_SOCK
+        stopRunning()
+    }
+
     func doOutput(data: Data) {
         outgoingQueue.async {
             self.outgoingBuffer.append(contentsOf: data.chunk(kSRTSOcket_payloadSize))
@@ -136,14 +143,6 @@ final class SRTSocket<T: SRTSocketDelegate> {
                 }
             } while self.isRunning.value
         }
-    }
-
-    func close() {
-        guard socket != SRT_INVALID_SOCK else {
-            return
-        }
-        srt_close(socket)
-        socket = SRT_INVALID_SOCK
     }
 
     func configure(_ binding: SRTSocketOption.Binding) -> Bool {

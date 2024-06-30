@@ -9,18 +9,11 @@ public final class SRTStream: IOStream {
     private var action: (() -> Void)?
     private var keyValueObservations: [NSKeyValueObservation] = []
     private weak var connection: SRTConnection?
-    private lazy var writer = {
-        var writer = TSWriter()
-        writer.delegate = self
-        return writer
-    }()
-    private lazy var reader = {
-        var reader = TSReader()
-        reader.delegate = self
-        return reader
+    private lazy var muxer: SRTMuxer = {
+        SRTMuxer(self)
     }()
 
-    /// Creates a new SRTStream object.
+    /// Creates a new stream object.
     public init(connection: SRTConnection) {
         super.init()
         self.connection = connection
@@ -101,40 +94,24 @@ public final class SRTStream: IOStream {
             connection?.socket?.doInput()
             self.readyState = .playing
         case .publish:
-            writer.expectedMedias.removeAll()
-            if videoInputFormat != nil {
-                writer.expectedMedias.insert(.video)
+            muxer.expectedMedias.removeAll()
+            if !videoInputFormats.isEmpty {
+                muxer.expectedMedias.insert(.video)
             }
-            if audioInputFormat != nil {
-                writer.expectedMedias.insert(.audio)
+            if !audioInputFormats.isEmpty {
+                muxer.expectedMedias.insert(.audio)
             }
-            self.readyState = .publishing(muxer: writer)
+            self.readyState = .publishing(muxer: muxer)
         default:
             break
         }
     }
 
     func doInput(_ data: Data) {
-        _ = reader.read(data)
+        muxer.read(data)
     }
-}
 
-extension SRTStream: TSWriterDelegate {
-    // MARK: TSWriterDelegate
-    public func writer(_ writer: TSWriter, didOutput data: Data) {
+    func doOutput(_ data: Data) {
         connection?.socket?.doOutput(data: data)
-    }
-
-    public func writer(_ writer: TSWriter, didRotateFileHandle timestamp: CMTime) {
-    }
-}
-
-extension SRTStream: TSReaderDelegate {
-    // MARK: TSReaderDelegate
-    public func reader(_ reader: TSReader, id: UInt16, didRead formatDescription: CMFormatDescription) {
-    }
-
-    public func reader(_ reader: TSReader, id: UInt16, didRead sampleBuffer: CMSampleBuffer) {
-        append(sampleBuffer)
     }
 }

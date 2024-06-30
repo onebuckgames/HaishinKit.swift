@@ -8,15 +8,15 @@
 
 * Camera and Microphone streaming library via RTMP and SRT for iOS, macOS, tvOS and visionOS.
 * README.md contains unreleased content, which can be tested on the main branch.
-* [API Documentation](https://shogo4405.github.io/HaishinKit.swift/)
+* [API Documentation](https://docs.haishinkit.com/swift/1.9.1/)
 
+## 💖 Sponsors
 <p align="center">
-<strong>Sponsored with 💖 by</strong><br />
-<a href="https://getstream.io/chat/sdk/ios/?utm_source=https://github.com/shogo4405/HaishinKit.swift&utm_medium=github&utm_content=developer&utm_term=swift" target="_blank">
-<img src="https://stream-blog-v2.imgix.net/blog/wp-content/uploads/f7401112f41742c4e173c30d4f318cb8/stream_logo_white.png?w=350" alt="Stream Chat" style="margin: 8px" />
-</a>
-<br />
-Enterprise Grade APIs for Feeds & Chat. <a href="https://getstream.io/tutorials/ios-chat/?utm_source=github.com/shogo4405/HaishinKit.swift&utm_medium=github&utm_campaign=oss_sponsorship" target="_blank">Try the iOS Chat tutorial</a> 💬
+  <br />
+  <br />
+  <a href="https://github.com/sponsors/shogo4405">Sponsorship</a>
+  <br />
+  <br />
 </p>
 
 ## 💬 Communication
@@ -30,15 +30,6 @@ Enterprise Grade APIs for Feeds & Chat. <a href="https://getstream.io/tutorials/
   - Consulting fee is [$50](https://www.paypal.me/shogo4405/50USD)/1 incident. I'm able to response a few days.
 * [Discord chatroom](https://discord.com/invite/8nkshPnanr).
 * 日本語が分かる方は、日本語でのコミニケーションをお願いします！
-
-## 💖 Sponsors
-<p align="center">
-  <br />
-  <br />
-  <a href="https://github.com/sponsors/shogo4405">Sponsorship</a>
-  <br />
-  <br />
-</p>
 
 ## 🌏 Related projects
 Project name    |Notes       |License
@@ -64,39 +55,66 @@ Project name    |Notes       |License
 - [x] [Enhanced RTMP](https://github.com/veovera/enhanced-rtmp)
 
 ### SRT(beta)
-- [x] Publish and Recording (H264/AAC)
+- [x] Publish and Recording (H264/HEVC/AAC)
 - [x] Playback(beta)
 - [ ] mode
   - [x] caller
   - [ ] listener
   - [ ] rendezvous
 
-### Multi Camera
-Supports two camera video sources. A picture-in-picture display that shows the image of the secondary camera of the primary camera. Supports camera split display that displays horizontally and vertically.
+### Offscreen Rendering.
+Through off-screen rendering capabilities, it is possible to display any text or bitmap on a video during broadcasting or viewing. This allows for various applications such as watermarking and time display.
+<p align="center">
+  <img width="732" alt="" src="https://github.com/shogo4405/HaishinKit.swift/assets/810189/43ad08d4-1a4c-4390-97ca-7bba6109e7cf">
+</p>
 
-|Picture-In-Picture|Split|
-|:-:|:-:|
-|<img width="1382" alt="" src="https://user-images.githubusercontent.com/810189/210043421-ceb18cb7-9b50-43fa-a0a2-8b92b78d9df1.png">|<img width="1382" alt="" src="https://user-images.githubusercontent.com/810189/210043687-a99f21b6-28b2-4170-96de-6c814debd84d.png">|
-
+<details>
+<summary>Example</summary>
+  
 ```swift
-// If you want to use the multi-camera feature, please make sure stream.isMultiCamSessionEnabled = true. Before attachCamera or attachAudio.
-stream.isMultiCamSessionEnabled = true
+stream.videoMixerSettings.mode = .offscreen
+stream.screen.startRunning()
+textScreenObject.horizontalAlignment = .right
+textScreenObject.verticalAlignment = .bottom
+textScreenObject.layoutMargin = .init(top: 0, left: 0, bottom: 16, right: 16)
 
-let back = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back)
-stream.attachCamera(back, track: 0) { _, error in
-  if let error {
-    logger.warn(error)
-  }
+stream.screen.backgroundColor = UIColor.black.cgColor
+
+let videoScreenObject = VideoTrackScreenObject()
+videoScreenObject.cornerRadius = 32.0
+videoScreenObject.track = 1
+videoScreenObject.horizontalAlignment = .right
+videoScreenObject.layoutMargin = .init(top: 16, left: 0, bottom: 0, right: 16)
+videoScreenObject.size = .init(width: 160 * 2, height: 90 * 2)
+_ = videoScreenObject.registerVideoEffect(MonochromeEffect())
+
+let imageScreenObject = ImageScreenObject()
+let imageURL = URL(fileURLWithPath: Bundle.main.path(forResource: "game_jikkyou", ofType: "png") ?? "")
+if let provider = CGDataProvider(url: imageURL as CFURL) {
+    imageScreenObject.verticalAlignment = .bottom
+    imageScreenObject.layoutMargin = .init(top: 0, left: 0, bottom: 16, right: 0)
+    imageScreenObject.cgImage = CGImage(
+        pngDataProviderSource: provider,
+        decode: nil,
+        shouldInterpolate: false,
+    intent: .defaultIntent
+    )
+} else {
+    logger.info("no image")
 }
 
-let front = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front)
-stream.attachCamera(front, track: 1) { videoUnit, error in
-  videoUnit?.isVideoMirrored = true
-  if let error {
-    logger.error(error)
-  }
-}
+let assetScreenObject = AssetScreenObject()
+assetScreenObject.size = .init(width: 180, height: 180)
+assetScreenObject.layoutMargin = .init(top: 16, left: 16, bottom: 0, right: 0)
+try? assetScreenObject.startReading(AVAsset(url: URL(fileURLWithPath: Bundle.main.path(forResource: "SampleVideo_360x240_5mb", ofType: "mp4") ?? "")))
+try? stream.screen.addChild(assetScreenObject)
+try? stream.screen.addChild(videoScreenObject)
+try? stream.screen.addChild(imageScreenObject)
+try? stream.screen.addChild(textScreenObject)
+stream.screen.delegate = self
 ```
+
+</details>
 
 ### Rendering
 |Features|[PiPHKView](https://shogo4405.github.io/HaishinKit.swift/Classes/PiPHKView.html)|[MTHKView](https://shogo4405.github.io/HaishinKit.swift/Classes/MTHKView.html)|
@@ -129,6 +147,7 @@ open HaishinKit.xcodeproj
 ### Development
 |Version|Xcode|Swift|
 |:----:|:----:|:----:|
+|1.9.0+|15.4+|5.10+|
 |1.8.0+|15.3+|5.9+|
 |1.7.0+|15.0+|5.9+|
 |1.6.0+|15.0+|5.8+|
@@ -137,7 +156,7 @@ open HaishinKit.xcodeproj
 |-|iOS|tvOS|macOS|visionOS|watchOS|
 |:----|:----:|:----:|:----:|:----:|:----:|
 |HaishinKit|13.0+|13.0+|10.15+|1.0+|-|
-|SRTHaishinKit|13.0+|-|13.0+|-|-|
+|SRTHaishinKit|13.0+|13.0+|13.0+|1.0+|-|
 
 ### Cocoa Keys
 Please contains Info.plist.
@@ -159,8 +178,8 @@ HaishinKit has a multi-module configuration. If you want to use the SRT protocol
 |  | HaishinKit | SRTHaishinKit |
 | - | :- | :- |
 | SPM | https://github.com/shogo4405/HaishinKit.swift | https://github.com/shogo4405/HaishinKit.swift |
-| CocoaPods | source 'https://github.com/CocoaPods/Specs.git'<br>use_frameworks!<br><br>def import_pods<br>    pod 'HaishinKit', '~> 1.6.0<br>end<br><br>target 'Your Target'  do<br>    platform :ios, '12.0'<br>    import_pods<br>end<br> | Not supported. |
-| Carthage | github "shogo4405/HaishinKit.swift" ~> 1.6.0 | Not supported. |
+| CocoaPods | source 'https://github.com/CocoaPods/Specs.git'<br>use_frameworks!<br><br>def import_pods<br>    pod 'HaishinKit', '~> 1.8.2<br>end<br><br>target 'Your Target'  do<br>    platform :ios, '13.0'<br>    import_pods<br>end<br> | Not supported. |
+| Carthage | github "shogo4405/HaishinKit.swift" ~> 1.8.2 | Not supported. |
 
 ## 🔧 Prerequisites
 Make sure you setup and activate your AVAudioSession iOS.
@@ -268,12 +287,65 @@ stream.play()
 ```
 
 ## 📓 Settings
-### 📹 Capture
+### 📹 AVCaptureSession
 ```swift
 stream.frameRate = 30
 stream.sessionPreset = AVCaptureSession.Preset.medium
 
-/// Specifies the video capture settings.
+// Do not call beginConfiguration() and commitConfiguration() internally within the scope of the method, as they are called internally.
+stream.configuration { session in
+  session.automaticallyConfiguresApplicationAudioSession = true
+}
+```
+
+### 🔊 Audio
+#### [Capture](https://docs.haishinkit.com/swift/1.9.1/Classes/IOAudioCaptureUnit.html)
+Specifies the capture capture settings.
+```swift
+let front = AVCaptureDevice.default(for: .audio)
+stream.attachAudio(front, track: 0) { audioUnit, error in
+}
+```
+
+#### [AudioMixerSettings](https://docs.haishinkit.com/swift/1.9.1/Structs/IOAudioMixerSettings.html)
+If you want to mix multiple audio tracks, please enable the feature flag.
+```swift
+stream.isMultiTrackAudioMixingEnabled = true
+```
+
+When you specify the sampling rate, it will perform resampling. Additionally, in the case of multiple channels, downsampling can be applied.
+```swift
+// Setting the value to 0 will be the same as the value specified in mainTrack.
+stream.audioMixerSettings = IOAudioMixerSettings(
+  sampleRate: Float64 = 44100,
+  channels: UInt32 = 0,
+)
+
+stream.audioMixerSettings.isMuted = false
+stream.audioMixerSettings.mainTrack = 0
+stream.audioMixerSettings.tracks = [
+  0: .init(
+    isMuted: Bool = false,
+    downmix: Bool = true,
+    channelMap: [Int]? = nil
+  )
+]
+```
+
+#### [AudioCodecSettings](https://docs.haishinkit.com/swift/1.9.1/Structs/AudioCodecSettings.html)
+```swift
+/// Specifies the bitRate of audio output.
+stream.audioSettings.bitrate = 64 * 1000
+/// Specifies the mixes the channels or not. Currently, it supports input sources with 4, 5, 6, and 8 channels.
+stream.audioSettings.downmix = true
+/// Specifies the map of the output to input channels.
+ stream.audioSettings.channelMap: [Int]? = nil
+```
+
+### 🎥 Video
+#### [Capture](https://docs.haishinkit.com/swift/1.9.1/Classes/IOVideoCaptureUnit.html)
+Specifies the video capture settings.
+```swift
 let front = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front)
 stream.attachCamera(front, track: 0) { videoUnit, error in
   videoUnit?.isVideoMirrored = true
@@ -282,21 +354,19 @@ stream.attachCamera(front, track: 0) { videoUnit, error in
 }
 ```
 
-### 🔊 [AudioCodecSettings](https://shogo4405.github.io/HaishinKit.swift/Structs/AudioCodecSettings.html)
-When you specify the sampling rate, it will perform resampling. Additionally, in the case of multiple channels, downsampling can be applied.
+#### [VideoMixerSettings](https://docs.haishinkit.com/swift/1.9.1/Structs/IOVideoMixerSettings.html)
 ```swift
-stream.audioSettings = AudioCodecSettings(
-  bitRate: Int = 64 * 1000,
-  sampleRate: Float64 = 0,
-  channels: UInt32 = 0,
-  downmix: Bool = false,
-  channelMap: [Int]? = nil
-)
+/// Specifies the image rendering mode.
+stream.videoMixerSettings.mode = .passthrough or .offscreen
+/// Specifies the muted indicies whether freeze video signal or not.
+stream.videoMixerSettings.isMuted = false
+/// Specifies the main track number.
+stream.videoMixerSettings.mainTrack = 0
 ```
 
-### 🎥 [VideoCodecSettings](https://shogo4405.github.io/HaishinKit.swift/Structs/VideoCodecSettings.html)
+#### [VideoCodecSettings](https://docs.haishinkit.com/swift/1.9.1/Structs/VideoCodecSettings.html)
 ```swift
-stream.videoSettings = VideoCodecSettings(
+stream.videoSettings = .init(
   videoSize: .init(width: 854, height: 480),
   profileLevel: kVTProfileLevel_H264_Baseline_3_1 as String,
   bitRate: 640 * 1000,
@@ -309,6 +379,12 @@ stream.videoSettings = VideoCodecSettings(
 ```
 
 ### ⏺️ Recording
+Internally, I am now handling data with more than 3 channels. If you encounter audio issues with IOStreamRecorder, it is recommended to set it back to a maximum of 2 channels when saving locally.
+```swift
+let channels = max(stream.audioInputFormats[0].channels ?? 1, 2)
+stream.audioMixerSettings = .init(sampleRate: 0, channels: channels)
+```
+
 ```swift
 // Specifies the recording settings. 0" means the same of input.
 var recorder = IOStreamRecorder()
