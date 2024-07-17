@@ -118,12 +118,12 @@ extension IOMixer: AudioCodecDelegate {
     }
 
     func audioCodec(_ codec: AudioCodec<IOMixer>, didOutput audioBuffer: AVAudioBuffer, when: AVAudioTime) {
-        switch audioBuffer {
-        case let audioBuffer as AVAudioPCMBuffer:
+//        switch audioBuffer {
+//        case let audioBuffer as AVAudioPCMBuffer:
 //            delegate?.mixer(self, didOutput: audioBuffer, when: when)
-        default:
-            break
-        }
+//        default:
+//            break
+//        }
         muxer?.append(audioBuffer, when: when)
         codec.releaseOutputBuffer(audioBuffer)
     }
