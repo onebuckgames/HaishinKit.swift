@@ -161,9 +161,10 @@ extension RTMPMuxer: IOMuxer {
         
         let when = AVAudioTime.init(hostTime: AVAudioTime.hostTime(forSeconds: sampleBuffer.presentationTimeStamp.seconds), sampleTime: sampleBuffer.presentationTimeStamp.value, atRate: audioFormat!.sampleRate)
         
-        let delta = audioTimeStamp.hostTime == 0 ? 0 :
-            (AVAudioTime.seconds(forHostTime: when.hostTime) - AVAudioTime.seconds(forHostTime: audioTimeStamp.hostTime)) * 1000
+//        let delta = audioTimeStamp.hostTime == 0 ? 0 :
+//            (AVAudioTime.seconds(forHostTime: when.hostTime) - AVAudioTime.seconds(forHostTime: audioTimeStamp.hostTime)) * 1000
 
+        let delta = audioTimestamp.update(when)
         guard 0 <= delta else {
             return
         }
@@ -177,7 +178,7 @@ extension RTMPMuxer: IOMuxer {
                             message: RTMPAudioMessage(streamId: 0, timestamp: delta, payload: buffer))
         }
         
-        audioTimeStamp = when
+//        audioTimeStamp = when
     }
 
     func append(_ audioBuffer: AVAudioBuffer, when: AVAudioTime) {
