@@ -554,7 +554,7 @@ open class RTMPStream: IOStream {
     
     /// Append a CMSampleBuffer.
     /// - Warning: This method can't use attachCamera or attachAudio method at the same time.
-    override public func append(_ sampleBuffer: CMSampleBuffer) {
+    public func append(_ sampleBuffer: CMSampleBuffer) {
         switch sampleBuffer.formatDescription?._mediaType {
         case kCMMediaType_Audio:
             muxer.lockAudioQueue.async {
