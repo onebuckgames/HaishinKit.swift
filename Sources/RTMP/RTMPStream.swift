@@ -440,7 +440,7 @@ open class RTMPStream: IOStream {
             metadata["audiocodecid"] = FLVAudioCodec.aac.rawValue
             metadata["audiodatarate"] = audioSettings.bitRate / 1000
             if let outputFormat = mixer.audioIO.outputFormat {
-                metadata["audiosamplerate"] = audioSettings.sampleRate
+                metadata["audiosamplerate"] = outputFormat.sampleRate
             }
         }
         return metadata
