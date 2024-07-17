@@ -172,7 +172,9 @@ extension RTMPMuxer: IOMuxer {
             var buffer = Data([RTMPMuxer.aac, FLVAACPacketType.raw.rawValue])
             buffer.append(blockData)
         
-            stream?.outputAudio(buffer, withTimestamp: delta)
+//            stream?.outputAudio(buffer, withTimestamp: delta)
+            stream?.doOutput(.zero, chunkStreamId: FLVTagType.audio.streamId,
+                            message: RTMPAudioMessage(streamId: 0, timestamp: delta, payload: buffer))
         }
         
         audioTimeStamp = when
