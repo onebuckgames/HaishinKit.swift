@@ -416,6 +416,17 @@ open class IOStream: NSObject {
         }
     }
 
+    /// Unregisters a video effect.
+    public func containsEffect(_ effect: VideoEffect) -> Bool {
+        var isRegistered: Bool = false
+        
+        mixer.videoIO.lockQueue.sync {
+            isRegistered = self.mixer.videoIO.containsEffect(effect)
+        }
+        
+        return isRegistered
+    }
+
     /// Adds an observer.
     public func addObserver(_ observer: any IOStreamObserver) {
         guard !observers.contains(where: { $0 === observer }) else {
