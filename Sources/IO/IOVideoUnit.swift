@@ -155,6 +155,10 @@ final class IOVideoUnit: IOUnit {
         return videoMixer.unregisterEffect(effect)
     }
 
+    func containsEffect(_ effect: VideoEffect) -> Bool {
+        return videoMixer.containsEffect(effect)
+    }
+
     func append(_ track: UInt8, buffer: CMSampleBuffer) {
         if buffer.formatDescription?.isCompressed == true {
             codec.append(buffer)

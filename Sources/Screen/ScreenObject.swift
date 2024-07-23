@@ -226,6 +226,14 @@ public final class VideoTrackScreenObject: ScreenObject {
         return false
     }
 
+    public func containsEffect(_ effect: VideoEffect) -> Bool {
+        if effects.contains(where: { $0 === effect }) {
+            return true
+        }
+        
+        return false
+    }
+
     override public func makeImage(_ renderer: some ScreenRenderer) -> CGImage? {
         guard let sampleBuffer = queue?.dequeue(), let pixelBuffer = sampleBuffer.imageBuffer else {
             return nil

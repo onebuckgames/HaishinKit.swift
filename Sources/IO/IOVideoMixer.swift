@@ -56,6 +56,10 @@ final class IOVideoMixer<T: IOVideoMixerDelegate> {
         return videoTrackScreenObject.unregisterVideoEffect(effect)
     }
 
+    func containsEffect(_ effect: VideoEffect) -> Bool {
+        return videoTrackScreenObject.containsEffect(effect)
+    }
+
     func reset(_ track: UInt8) {
         inputFormats[track] = nil
         let screens: [VideoTrackScreenObject] = screen.getScreenObjects()
