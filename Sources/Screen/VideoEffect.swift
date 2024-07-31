@@ -23,7 +23,7 @@ import Foundation
 /// ```
 open class VideoEffect: NSObject {
     /// Creates an object instance.
-    public init() {
+    override init() {
     }
 
     /// Executes to apply a video effect.
