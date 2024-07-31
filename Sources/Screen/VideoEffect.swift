@@ -21,7 +21,7 @@ import Foundation
 ///     }
 /// }
 /// ```
-open class VideoEffect {
+open class VideoEffect: NSObject {
     /// Creates an object instance.
     public init() {
     }
