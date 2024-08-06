@@ -153,27 +153,53 @@ public final class ImageScreenObject: ScreenObject {
             guard cgImage != oldValue else {
                 return
             }
-            if let cgImage {
-                size = cgImage.size
-            }
             invalidateLayout()
         }
     }
 
     override public func makeImage(_ renderer: some ScreenRenderer) -> CGImage? {
-        return cgImage
+        let intersection = bounds.intersection(renderer.bounds)
+
+        guard bounds != intersection else {
+            return cgImage
+        }
+
+        // Handling when the drawing area is exceeded.
+        let x: CGFloat
+        switch horizontalAlignment {
+        case .left:
+            x = bounds.origin.x
+        case .center:
+            x = bounds.origin.x / 2
+        case .right:
+            x = 0.0
+        }
+
+        let y: CGFloat
+        switch verticalAlignment {
+        case .top:
+            y = 0.0
+        case .middle:
+            y = abs(bounds.origin.y) / 2
+        case .bottom:
+            y = abs(bounds.origin.y)
+        }
+
+        return cgImage?.cropping(to: .init(origin: .init(x: x, y: y), size: intersection.size))
     }
 
     override public func makeBounds(_ size: CGSize) -> CGRect {
         guard let cgImage else {
-            return super.makeBounds(self.size)
+            return super.makeBounds(size)
         }
-        return super.makeBounds(cgImage.size)
+        return super.makeBounds(size == .zero ? cgImage.size : size)
     }
 }
 
 /// An object that manages offscreen rendering a video track source.
-public final class VideoTrackScreenObject: ScreenObject {
+public final class VideoTrackScreenObject: ScreenObject, ChromaKeyProcessorble {
+    public var chromaKeyColor: CGColor?
+
     /// Specifies the track number how the displays the visual content.
     public var track: UInt8 = 0 {
         didSet {
@@ -202,7 +228,7 @@ public final class VideoTrackScreenObject: ScreenObject {
         super.init()
         horizontalAlignment = .center
         do {
-            queue = TypedBlockQueue(try CMBufferQueue(capacity: 1, handlers: .outputPTSSortedSampleBuffers))
+            queue = try TypedBlockQueue(capacity: 1, handlers: .outputPTSSortedSampleBuffers)
         } catch {
             logger.error(error)
         }
@@ -368,7 +394,9 @@ public final class TextScreenObject: ScreenObject {
 
 #if !os(visionOS)
 /// An object that manages offscreen rendering an asset resource.
-public final class AssetScreenObject: ScreenObject {
+public final class AssetScreenObject: ScreenObject, ChromaKeyProcessorble {
+    public var chromaKeyColor: CGColor?
+
     public var isReading: Bool {
         return reader?.status == .reading
     }

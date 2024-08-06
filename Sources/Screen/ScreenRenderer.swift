@@ -9,6 +9,8 @@ public protocol ScreenRenderer: AnyObject {
     var context: CIContext { get }
     /// Specifies the backgroundColor for output video.
     var backgroundColor: CGColor { get set }
+    /// The current screen bounds.
+    var bounds: CGRect { get }
     /// Layouts a screen object.
     func layout(_ screenObject: ScreenObject)
     /// Draws a sceen object.
@@ -18,6 +20,10 @@ public protocol ScreenRenderer: AnyObject {
 }
 
 final class ScreenRendererByCPU: ScreenRenderer {
+    static let noFlags = vImage_Flags(kvImageNoFlags)
+
+    var bounds: CGRect = .init(origin: .zero, size: Screen.size)
+
     lazy var context = {
         guard let deive = MTLCreateSystemDefaultDevice() else {
             return CIContext(options: nil)
@@ -65,7 +71,6 @@ final class ScreenRendererByCPU: ScreenRenderer {
         version: 0,
         decode: nil,
         renderingIntent: .defaultIntent)
-    private var masks: [ScreenObject: vImage_Buffer] = [:]
     private var images: [ScreenObject: vImage_Buffer] = [:]
     private var canvas: vImage_Buffer = .init()
     private var converter: vImageConverter?
@@ -79,6 +84,9 @@ final class ScreenRendererByCPU: ScreenRenderer {
         }
     }
     private var backgroundColorUInt8Array: [UInt8] = [0x00, 0x00, 0x00, 0x00]
+    private lazy var choromaKeyProcessor: ChromaKeyProcessor? = {
+        return try? ChromaKeyProcessor()
+    }()
 
     func setTarget(_ pixelBuffer: CVPixelBuffer?) {
         guard let pixelBuffer else {
@@ -121,13 +129,21 @@ final class ScreenRendererByCPU: ScreenRenderer {
             }
             do {
                 images[screenObject]?.free()
-                images[screenObject] = try vImage_Buffer(cgImage: image, format: format)
+                var buffer = try vImage_Buffer(cgImage: image, format: format)
+                images[screenObject] = buffer
                 if 0 < screenObject.cornerRadius {
-                    masks[screenObject] = shapeFactory.cornerRadius(screenObject.bounds.size, cornerRadius: screenObject.cornerRadius)
+                    if var mask = shapeFactory.cornerRadius(image.size, cornerRadius: screenObject.cornerRadius) {
+                        vImageOverwriteChannels_ARGB8888(&mask, &buffer, &buffer, 0x8, Self.noFlags)
+                    }
                 } else {
-                    masks[screenObject] = nil
+                    if let screenObject = screenObject as? (any ChromaKeyProcessorble),
+                       let chromaKeyColor = screenObject.chromaKeyColor,
+                       var mask = try choromaKeyProcessor?.makeMask(&buffer, chromeKeyColor: chromaKeyColor) {
+                        vImageOverwriteChannels_ARGB8888(&mask, &buffer, &buffer, 0x8, Self.noFlags)
+                    }
                 }
             } catch {
+                logger.error(error)
             }
         }
     }
@@ -137,12 +153,9 @@ final class ScreenRendererByCPU: ScreenRenderer {
             return
         }
 
-        if var mask = masks[screenObject] {
-            vImageSelectChannels_ARGB8888(&mask, &image, &image, 0x8, vImage_Flags(kvImageNoFlags))
-        }
-
         let origin = screenObject.bounds.origin
-        let start = Int(origin.y) * canvas.rowBytes + Int(origin.x) * 4
+        let start = Int(max(0, origin.y)) * canvas.rowBytes + Int(max(0, origin.x)) * 4
+
         var destination = vImage_Buffer(
             data: canvas.data.advanced(by: start),
             height: image.height,

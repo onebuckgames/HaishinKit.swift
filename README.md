@@ -65,9 +65,9 @@ Project name    |Notes       |License
 
 ### Offscreen Rendering.
 Through off-screen rendering capabilities, it is possible to display any text or bitmap on a video during broadcasting or viewing. This allows for various applications such as watermarking and time display.
-<p align="center">
-  <img width="732" alt="" src="https://github.com/shogo4405/HaishinKit.swift/assets/810189/43ad08d4-1a4c-4390-97ca-7bba6109e7cf">
-</p>
+|Ingest|Playback|
+|:---:|:---:|
+|<img width="961" alt="スクリーンショット 2024-08-06 1 17 15" src="https://github.com/user-attachments/assets/aaf6c06f-d2de-43c1-a435-90907f370977">|<img width="849" alt="スクリーンショット 2024-08-06 1 17 26" src="https://github.com/user-attachments/assets/0a07b418-aa56-41cb-8e6d-e12596b25ae8">|
 
 <details>
 <summary>Example</summary>
@@ -179,8 +179,9 @@ HaishinKit has a multi-module configuration. If you want to use the SRT protocol
 |  | HaishinKit | SRTHaishinKit |
 | - | :- | :- |
 | SPM | https://github.com/shogo4405/HaishinKit.swift | https://github.com/shogo4405/HaishinKit.swift |
-| CocoaPods |<pre>source 'https://github.com/CocoaPods/Specs.git'<br>use_frameworks!<br><br>def import_pods<br>  pod 'HaishinKit', '~> 1.9.1<br>end<br><br>target 'Your Target'  do<br>  platform :ios, '13.0'<br>  import_pods<br>end</pre>|Not available. |
-| Carthage | github "shogo4405/HaishinKit.swift" ~> 1.9.1 | Not available. |
+| CocoaPods |<pre>def import_pods<br>  pod 'HaishinKit', '~> 1.9.2<br>end</pre>|<pre>def import_pods<br>  pod 'SRTHaishinKit', '~> 1.9.2<br>end</pre>|
+| Carthage | github "shogo4405/HaishinKit.swift" ~> 1.9.2 | Not available. |
+* SRTHaishinKit via CocoaPods supports only iOS and tvOS.
 
 ## 🔧 Prerequisites
 Make sure you setup and activate your AVAudioSession iOS.
@@ -415,6 +416,9 @@ recorder.settings = [
 recorder.startRunning()
 // recorder.stopRunning()
 ```
+
+## 📜 Known Issues
+- [Xcode15.4+, High CPU Usage and Increse Memory with SPM](https://github.com/shogo4405/HaishinKit.swift/issues/1512)
 
 ## 📜 License
 BSD-3-Clause
