@@ -23,8 +23,8 @@ final class IngestViewController: UIViewController {
     private var currentPosition: AVCaptureDevice.Position = .back
     private var retryCount: Int = 0
     private var preferedStereo = false
-    private let netStreamSwitcher: NetStreamSwitcher = .init()
-    private lazy var mixer = IOMixer()
+    private let netStreamSwitcher: HKStreamSwitcher = .init()
+    private lazy var mixer = MediaMixer(multiCamSessionEnabled: true, multiTrackAudioMixingEnabled: false, useManualCapture: true)
     private lazy var audioCapture: AudioCapture = {
         let audioCapture = AudioCapture()
         audioCapture.delegate = self
@@ -36,8 +36,8 @@ final class IngestViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         Task {
-            // If you want to use the multi-camera feature, please make sure stream.isMultiCamSessionEnabled = true. Before attachCamera or attachAudio.
-            // mixer.isMultiCamSessionEnabled = true
+            // If you want to use the multi-camera feature, please make create a MediaMixer with a multiCamSession mode.
+            // let mixer = MediaMixer(multiCamSessionEnabled: true)
             if let orientation = DeviceUtil.videoOrientation(by: UIApplication.shared.statusBarOrientation) {
                 await mixer.setVideoOrientation(orientation)
             }
@@ -47,9 +47,9 @@ final class IngestViewController: UIViewController {
             await mixer.setVideoMixerSettings(videoMixerSettings)
             await netStreamSwitcher.setPreference(Preference.default)
             if let stream = await netStreamSwitcher.stream {
-                await mixer.addStream(stream)
-                if let view = view as? (any IOStreamObserver) {
-                    await stream.addObserver(view)
+                await mixer.addOutput(stream)
+                if let view = view as? (any HKStreamOutput) {
+                    await stream.addOutput(view)
                 }
             }
         }
@@ -61,7 +61,7 @@ final class IngestViewController: UIViewController {
             videoScreenObject.layoutMargin = .init(top: 16, left: 0, bottom: 0, right: 16)
             videoScreenObject.size = .init(width: 160 * 2, height: 90 * 2)
             await mixer.screen.size = .init(width: 720, height: 1280)
-            await mixer.screen.backgroundColor = UIColor.white.cgColor
+            await mixer.screen.backgroundColor = UIColor.black.cgColor
             try? await mixer.screen.addChild(videoScreenObject)
         }
 
@@ -72,15 +72,18 @@ final class IngestViewController: UIViewController {
     override func viewWillAppear(_ animated: Bool) {
         logger.info("viewWillAppear")
         super.viewWillAppear(animated)
+
         Task {
             let back = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: currentPosition)
-            try? await mixer.attachCamera(back, track: 0)
+            try? await mixer.attachVideo(back, track: 0)
             try? await mixer.attachAudio(AVCaptureDevice.default(for: .audio))
             let front = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front)
-            try? await mixer.attachCamera(front, track: 1) { videoUnit in
-                videoUnit?.isVideoMirrored = true
+            try? await mixer.attachVideo(front, track: 1) { videoUnit in
+                videoUnit.isVideoMirrored = true
             }
+            await mixer.startRunning()
         }
+        NotificationCenter.default.addObserver(self, selector: #selector(on(_:)), name: UIDevice.orientationDidChangeNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(didInterruptionNotification(_:)), name: AVAudioSession.interruptionNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(didRouteChangeNotification(_:)), name: AVAudioSession.routeChangeNotification, object: nil)
     }
@@ -90,17 +93,19 @@ final class IngestViewController: UIViewController {
         super.viewWillDisappear(animated)
         Task {
             await netStreamSwitcher.close()
+            await mixer.stopRunning()
             try? await mixer.attachAudio(nil)
-            try? await mixer.attachCamera(nil, track: 0)
-            try? await mixer.attachCamera(nil, track: 1)
+            try? await mixer.attachVideo(nil, track: 0)
+            try? await mixer.attachVideo(nil, track: 1)
         }
         // swiftlint:disable:next notification_center_detachment
         NotificationCenter.default.removeObserver(self)
     }
 
     override func viewWillTransition(to size: CGSize, with coordinator: any UIViewControllerTransitionCoordinator) {
+        super.viewWillTransition(to: size, with: coordinator)
         Task { @ScreenActor in
-            if  await UIDevice.current.orientation.isLandscape {
+            if await UIDevice.current.orientation.isLandscape {
                 await mixer.screen.size = .init(width: 1280, height: 720)
             } else {
                 await mixer.screen.size = .init(width: 720, height: 1280)
@@ -114,7 +119,6 @@ final class IngestViewController: UIViewController {
         Task {
             if await mixer.isMultiCamSessionEnabled {
                 var videoMixerSettings = await mixer.videoMixerSettings
-
                 if videoMixerSettings.mainTrack == 0 {
                     videoMixerSettings.mainTrack = 1
                     await mixer.setVideoMixerSettings(videoMixerSettings)
@@ -123,14 +127,15 @@ final class IngestViewController: UIViewController {
                     }
                 } else {
                     videoMixerSettings.mainTrack = 0
+                    await mixer.setVideoMixerSettings(videoMixerSettings)
                     Task { @ScreenActor in
                         videoScreenObject.track = 1
                     }
                 }
             } else {
                 let position: AVCaptureDevice.Position = currentPosition == .back ? .front : .back
-                try? await mixer.attachCamera(AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: position)) { videoUnit in
-                    videoUnit?.isVideoMirrored = position == .front
+                try? await mixer.attachVideo(AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: position)) { videoUnit in
+                    videoUnit.isVideoMirrored = position == .front
                 }
                 currentPosition = position
             }
@@ -146,24 +151,38 @@ final class IngestViewController: UIViewController {
 
     @IBAction func on(slider: UISlider) {
         if slider == audioBitrateSlider {
-            audioBitrateLabel?.text = "audio \(Int(slider.value))/kbps"
-            // stream?.audioSettings.bitRate = Int(slider.value * 1000)
+            Task {
+                guard let stream = await netStreamSwitcher.stream else {
+                    return
+                }
+                audioBitrateLabel?.text = "audio \(Int(slider.value))/kbps"
+                var audioSettings = await stream.audioSettings
+                audioSettings.bitRate = Int(slider.value * 1000)
+                await stream.setAudioSettings(audioSettings)
+            }
         }
         if slider == videoBitrateSlider {
-            videoBitrateLabel?.text = "video \(Int(slider.value))/kbps"
-            // stream?.bitrateStrategy = IOStreamVideoAdaptiveBitRateStrategy(mamimumVideoBitrate: Int(slider.value * 1000))
+            Task {
+                guard let stream = await netStreamSwitcher.stream else {
+                    return
+                }
+                videoBitrateLabel?.text = "video \(Int(slider.value))/kbps"
+                var videoSettings = await stream.videoSettings
+                videoSettings.bitRate = Int(slider.value * 1000)
+                await stream.setVideoSettings(videoSettings)
+            }
         }
         if slider == zoomSlider {
             let zoomFactor = CGFloat(slider.value)
-            guard let device = mixer.videoCapture(for: 0)?.device, 1 <= zoomFactor && zoomFactor < device.activeFormat.videoMaxZoomFactor else {
-                return
-            }
-            do {
-                try device.lockForConfiguration()
-                device.ramp(toVideoZoomFactor: zoomFactor, withRate: 5.0)
-                device.unlockForConfiguration()
-            } catch let error as NSError {
-                logger.error("while locking device for ramp: \(error)")
+            Task {
+                try await mixer.configuration(video: 0) { unit in
+                    guard let device = unit.device else {
+                        return
+                    }
+                    try device.lockForConfiguration()
+                    device.ramp(toVideoZoomFactor: zoomFactor, withRate: 5.0)
+                    device.unlockForConfiguration()
+                }
             }
         }
     }
@@ -199,17 +218,16 @@ final class IngestViewController: UIViewController {
         if let gestureView = gesture.view, gesture.state == .ended {
             let touchPoint: CGPoint = gesture.location(in: gestureView)
             let pointOfInterest = CGPoint(x: touchPoint.x / gestureView.bounds.size.width, y: touchPoint.y / gestureView.bounds.size.height)
-            guard
-                let device = mixer.videoCapture(for: 0)?.device, device.isFocusPointOfInterestSupported else {
-                return
-            }
-            do {
-                try device.lockForConfiguration()
-                device.focusPointOfInterest = pointOfInterest
-                device.focusMode = .continuousAutoFocus
-                device.unlockForConfiguration()
-            } catch let error as NSError {
-                logger.error("while locking device for focusPointOfInterest: \(error)")
+            Task {
+                try await mixer.configuration(video: 0) { unit in
+                    guard let device = unit.device else {
+                        return
+                    }
+                    try device.lockForConfiguration()
+                    device.focusPointOfInterest = pointOfInterest
+                    device.focusMode = .continuousAutoFocus
+                    device.unlockForConfiguration()
+                }
             }
         }
     }
@@ -316,8 +334,8 @@ final class IngestViewController: UIViewController {
 
 extension IngestViewController: AudioCaptureDelegate {
     // MARK: AudioCaptureDelegate
-    func audioCapture(_ audioCapture: AudioCapture, buffer: AVAudioBuffer, time: AVAudioTime) {
-        mixer.append(buffer, when: time)
+    nonisolated func audioCapture(_ audioCapture: AudioCapture, buffer: AVAudioBuffer, time: AVAudioTime) {
+        Task { await mixer.append(buffer, when: time) }
     }
 }
 

@@ -1,6 +1,17 @@
-// swift-tools-version:5.9
+// swift-tools-version:6.0
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 import PackageDescription
+
+#if swift(<6)
+let swiftSettings: [SwiftSetting] = [
+    .enableExperimentalFeature("ExistentialAny"),
+    .enableExperimentalFeature("StrictConcurrency")
+]
+#else
+let swiftSettings: [SwiftSetting] = [
+    .enableUpcomingFeature("ExistentialAny")
+]
+#endif
 
 let package = Package(
     name: "HaishinKit",
@@ -13,7 +24,8 @@ let package = Package(
     ],
     products: [
         .library(name: "HaishinKit", targets: ["HaishinKit"]),
-        .library(name: "SRTHaishinKit", targets: ["SRTHaishinKit"])
+        .library(name: "SRTHaishinKit", targets: ["SRTHaishinKit"]),
+        .library(name: "MoQTHaishinKit", targets: ["MoQTHaishinKit"])
     ],
     dependencies: [
         .package(url: "https://github.com/shogo4405/Logboard.git", "2.5.0"..<"2.6.0")
@@ -21,28 +33,35 @@ let package = Package(
     targets: [
         .binaryTarget(
             name: "libsrt",
-            path: "Vendor/SRT/libsrt.xcframework"
+            path: "SRTHaishinKit/Vendor/SRT/libsrt.xcframework"
         ),
-        .target(name: "SwiftPMSupport"),
-        .target(name: "HaishinKit",
-                dependencies: ["Logboard", "SwiftPMSupport"],
-                path: "Sources",
-                sources: [
-                    "Codec",
-                    "Network",
-                    "Extension",
-                    "IO",
-                    "ISO",
-                    "RTMP",
-                    "Screen",
-                    "Util"
-                ]),
-        .target(name: "SRTHaishinKit",
-                dependencies: [
-                    "libsrt",
-                    "HaishinKit"
-                ],
-                path: "SRTHaishinKit"
+        .target(
+            name: "HaishinKit",
+            dependencies: ["Logboard"],
+            path: "HaishinKit/Sources",
+            swiftSettings: swiftSettings
+        ),
+        .target(
+            name: "SRTHaishinKit",
+            dependencies: ["libsrt", "HaishinKit"],
+            path: "SRTHaishinKit/Sources",
+            swiftSettings: swiftSettings
+        ),
+        .target(
+            name: "MoQTHaishinKit",
+            dependencies: ["HaishinKit"],
+            path: "MoQTHaishinKit/Sources",
+            swiftSettings: swiftSettings
+        ),
+        .testTarget(
+            name: "HaishinKitTests",
+            dependencies: ["HaishinKit"],
+            path: "HaishinKit/Tests",
+            resources: [
+                .process("Asset")
+            ],
+            swiftSettings: swiftSettings
         )
-    ]
+    ],
+    swiftLanguageModes: [.v6, .v5]
 )

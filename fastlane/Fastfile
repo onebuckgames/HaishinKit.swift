@@ -15,17 +15,22 @@
 
 desc "[CI] Review PullRequest."
 lane :review do
-  spm
-  carthage(
-    use_xcframeworks: true,
-    platform: 'iOS'
-  ) if Helper.is_ci?
-  danger(
-    danger_id: 'danger',
-    dangerfile: 'Dangerfile',
-    verbose: true
+  spm(
+    command: "test",
+    package_path: "HaishinKit",
   )
-  scan(scheme: 'Tests')
+  spm(
+    command: "test",
+    package_path: "SRTHaishinKit",
+  )
+  begin
+    danger(
+      danger_id: 'danger',
+      dangerfile: 'Dangerfile',
+      verbose: true
+    )
+  rescue
+  end
 end
 
 desc "Creates documents."

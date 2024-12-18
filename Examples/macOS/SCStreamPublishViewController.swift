@@ -9,7 +9,7 @@ class SCStreamPublishViewController: NSViewController {
     @IBOutlet private weak var cameraPopUpButton: NSPopUpButton!
     @IBOutlet private weak var urlField: NSTextField!
     @IBOutlet private weak var mthkView: MTHKView!
-    private let netStreamSwitcher: NetStreamSwitcher = .init()
+    private let netStreamSwitcher: HKStreamSwitcher = .init()
     private let lockQueue = DispatchQueue(label: "SCStreamPublishViewController.lock")
     private var _scstream: Any?
 
@@ -38,7 +38,7 @@ class SCStreamPublishViewController: NSViewController {
         Task {
             await netStreamSwitcher.setPreference(Preference.default)
             let stream = await netStreamSwitcher.stream
-            await stream?.addObserver(mthkView!)
+            await stream?.addOutput(mthkView!)
             try await SCShareableContent.current.windows.forEach {
                 cameraPopUpButton.addItem(withTitle: $0.owningApplication?.applicationName ?? "")
             }
