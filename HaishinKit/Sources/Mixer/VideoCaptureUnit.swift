@@ -134,10 +134,6 @@ final class VideoCaptureUnit: CaptureUnit {
 
     @available(tvOS 17.0, *)
     func setBackgroundMode(_ background: Bool) {
-        guard !session.isMultitaskingCameraAccessEnabled else {
-            return
-        }
-        
         if #available(iOS 16.0, *) {
             guard !session.isMultitaskingCameraAccessEnabled else {
                 return
