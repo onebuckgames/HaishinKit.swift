@@ -83,6 +83,11 @@ public final actor MediaMixer {
         session.isRunning
     }
 
+    /// The interrupts events is occured or not.
+    public var isInterputted: AsyncStream<Bool> {
+        session.isInturreped
+    }
+
     #if os(iOS) || os(macOS)
     /// The video orientation for stream.
     public var videoOrientation: AVCaptureVideoOrientation {
@@ -92,6 +97,7 @@ public final actor MediaMixer {
 
     public private(set) var isRunning = false
     private var outputs: [any MediaMixerOutput] = []
+    @MainActor
     private var cancellables: Set<AnyCancellable> = []
     private let useManualCapture: Bool
     private lazy var audioIO = AudioCaptureUnit(session)
@@ -345,7 +351,10 @@ public final actor MediaMixer {
         }
     }
 
-    func setVideoRenderingMode(_ mode: VideoMixerSettings.Mode) {
+    private func setVideoRenderingMode(_ mode: VideoMixerSettings.Mode) {
+        guard isRunning else {
+            return
+        }
         switch mode {
         case .passthrough:
             Task { @ScreenActor in
@@ -355,7 +364,7 @@ public final actor MediaMixer {
             Task { @ScreenActor in
                 displayLink.preferredFramesPerSecond = await Int(frameRate)
                 displayLink.startRunning()
-                for await updateFrame in displayLink.updateFrames where displayLink.isRunning {
+                for await updateFrame in displayLink.updateFrames {
                     guard let buffer = screen.makeSampleBuffer(updateFrame) else {
                         continue
                     }
@@ -368,7 +377,7 @@ public final actor MediaMixer {
     }
 
     #if os(iOS) || os(tvOS) || os(visionOS)
-    func setBackgroundMode(_ background: Bool) {
+    private func setBackgroundMode(_ background: Bool) {
         guard #available(tvOS 17.0, *) else {
             return
         }
@@ -380,6 +389,41 @@ public final actor MediaMixer {
         }
     }
     #endif
+
+    @available(tvOS 17.0, *)
+    private func sessionRuntimeErrorOccured(_ error: AVError) async {
+        switch error.code {
+        #if os(iOS) || os(tvOS) || os(visionOS)
+        case .mediaServicesWereReset:
+            session.startRunningIfNeeded()
+        #endif
+        #if os(iOS) || os(tvOS) || os(macOS)
+        case .unsupportedDeviceActiveFormat:
+            guard let device = error.device, let format = device.videoFormat(
+                width: session.sessionPreset.width ?? Int32.max,
+                height: session.sessionPreset.height ?? Int32.max,
+                frameRate: videoIO.frameRate,
+                isMultiCamSupported: session.isMultiCamSessionEnabled
+            ), device.activeFormat != format else {
+                return
+            }
+            do {
+                try device.lockForConfiguration()
+                device.activeFormat = format
+                if format.isFrameRateSupported(videoIO.frameRate) {
+                    device.activeVideoMinFrameDuration = CMTime(value: 100, timescale: CMTimeScale(100 * videoIO.frameRate))
+                    device.activeVideoMaxFrameDuration = CMTime(value: 100, timescale: CMTimeScale(100 * videoIO.frameRate))
+                }
+                device.unlockForConfiguration()
+                session.startRunningIfNeeded()
+            } catch {
+                logger.warn(error)
+            }
+        #endif
+        default:
+            break
+        }
+    }
 }
 
 extension MediaMixer: AsyncRunner {
@@ -390,11 +434,11 @@ extension MediaMixer: AsyncRunner {
         }
         isRunning = true
         Task {
-            for await inputs in videoIO.inputs where isRunning {
+            for await inputs in videoIO.inputs {
                 Task { @ScreenActor in
                     var sampleBuffer = inputs.1
                     screen.append(inputs.0, buffer: sampleBuffer)
-                    if await videoMixerSettings.mainTrack == inputs.0 {
+                    if await videoMixerSettings.mainTrack == inputs.0 && 0 < screen.targetTimestamp {
                         let diff = ceil((screen.targetTimestamp - sampleBuffer.presentationTimeStamp.seconds) * 10000) / 10000
                         screen.videoCaptureLatency = diff
                     }
@@ -405,16 +449,23 @@ extension MediaMixer: AsyncRunner {
             }
         }
         Task {
-            for await video in videoIO.output where isRunning {
+            for await video in videoIO.output {
                 for output in outputs where await output.videoTrackId == UInt8.max {
                     output.mixer(self, didOutput: video)
                 }
             }
         }
         Task {
-            for await audio in audioIO.output where isRunning {
+            for await audio in audioIO.output {
                 for output in outputs where await output.audioTrackId == UInt8.max {
                     output.mixer(self, didOutput: audio.0, when: audio.1)
+                }
+            }
+        }
+        if #available(tvOS 17.0, *) {
+            Task {
+                for await runtimeError in session.runtimeError {
+                    await sessionRuntimeErrorOccured(runtimeError)
                 }
             }
         }
@@ -423,22 +474,24 @@ extension MediaMixer: AsyncRunner {
             session.startRunning()
         }
         #if os(iOS) || os(tvOS) || os(visionOS)
-        NotificationCenter
-            .Publisher(center: .default, name: UIApplication.didEnterBackgroundNotification, object: nil)
-            .sink { _ in
-                Task { @MainActor in
-                    await self.setBackgroundMode(true)
+        Task { @MainActor in
+            NotificationCenter
+                .Publisher(center: .default, name: UIApplication.didEnterBackgroundNotification, object: nil)
+                .sink { _ in
+                    Task {
+                        await self.setBackgroundMode(true)
+                    }
                 }
-            }
-            .store(in: &cancellables)
-        NotificationCenter
-            .Publisher(center: .default, name: UIApplication.willEnterForegroundNotification, object: nil)
-            .sink { _ in
-                Task { @MainActor in
-                    await self.setBackgroundMode(false)
+                .store(in: &cancellables)
+            NotificationCenter
+                .Publisher(center: .default, name: UIApplication.willEnterForegroundNotification, object: nil)
+                .sink { _ in
+                    Task {
+                        await self.setBackgroundMode(false)
+                    }
                 }
-            }
-            .store(in: &cancellables)
+                .store(in: &cancellables)
+        }
         #endif
     }
 
@@ -450,8 +503,12 @@ extension MediaMixer: AsyncRunner {
         if useManualCapture {
             session.stopRunning()
         }
-        cancellables.forEach { $0.cancel() }
-        cancellables.removeAll()
+        audioIO.finish()
+        videoIO.finish()
+        Task { @MainActor in
+            cancellables.forEach { $0.cancel() }
+            cancellables.removeAll()
+        }
         Task { @ScreenActor in
             displayLink.stopRunning()
         }
