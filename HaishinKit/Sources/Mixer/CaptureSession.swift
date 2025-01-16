@@ -24,7 +24,7 @@ final class CaptureSession {
             }
         }
     }
-    @available(tvOS 17.0, *)
+    @available(tvOS 17.0, iOS 16.0, *)
     var isMultitaskingCameraAccessEnabled: Bool {
         return session.isMultitaskingCameraAccessEnabled
     }
@@ -206,9 +206,11 @@ final class CaptureSession {
         if session.canSetSessionPreset(sessionPreset) {
             session.sessionPreset = sessionPreset
         }
-        if session.isMultitaskingCameraAccessSupported {
-            session.isMultitaskingCameraAccessEnabled = true
-        }
+        if #available(iOS 16.0, *) {
+            if session.isMultitaskingCameraAccessSupported {
+                session.isMultitaskingCameraAccessEnabled = true
+            }
+        }        
         return session
     }
     #elseif os(macOS)

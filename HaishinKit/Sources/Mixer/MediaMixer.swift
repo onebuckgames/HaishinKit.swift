@@ -381,6 +381,13 @@ public final actor MediaMixer {
         guard #available(tvOS 17.0, *) else {
             return
         }
+        
+        if #available(iOS 16.0, *) {
+            guard !session.isMultitaskingCameraAccessEnabled else {
+                return
+            }
+        }
+
         if background {
             videoIO.setBackgroundMode(background)
         } else {
