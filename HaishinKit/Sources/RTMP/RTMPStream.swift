@@ -631,9 +631,9 @@ public actor RTMPStream {
             return
         }
         switch message.payload[1] {
-        case FLVAACPacketType.seq.rawValue:
+        case RTMPAACPacketType.seq.rawValue:
             audioFormat = message.makeAudioFormat()
-        case FLVAACPacketType.raw.rawValue:
+        case RTMPAACPacketType.raw.rawValue:
             if audioFormat == nil {
                 audioFormat = message.makeAudioFormat()
             }
@@ -648,26 +648,26 @@ public actor RTMPStream {
 
     private func append(_ message: RTMPVideoMessage, type: RTMPChunkType) {
         videoTimestamp.update(message, chunkType: type)
-        guard FLVTagType.video.headerSize <= message.payload.count && message.isSupported else {
+        guard RTMPTagType.video.headerSize <= message.payload.count && message.isSupported else {
             return
         }
         if message.isExHeader {
             // IsExHeader for Enhancing RTMP, FLV
             switch message.packetType {
-            case FLVVideoPacketType.sequenceStart.rawValue:
+            case RTMPVideoPacketType.sequenceStart.rawValue:
                 videoFormat = message.makeFormatDescription()
-            case FLVVideoPacketType.codedFrames.rawValue:
+            case RTMPVideoPacketType.codedFrames.rawValue:
                 Task { await incoming.append(message, presentationTimeStamp: videoTimestamp.value, formatDesciption: videoFormat) }
-            case FLVVideoPacketType.codedFramesX.rawValue:
+            case RTMPVideoPacketType.codedFramesX.rawValue:
                 Task { await incoming.append(message, presentationTimeStamp: videoTimestamp.value, formatDesciption: videoFormat) }
             default:
                 break
             }
         } else {
             switch message.packetType {
-            case FLVAVCPacketType.seq.rawValue:
+            case RTMPAVCPacketType.seq.rawValue:
                 videoFormat = message.makeFormatDescription()
-            case FLVAVCPacketType.nal.rawValue:
+            case RTMPAVCPacketType.nal.rawValue:
                 Task { await incoming.append(message, presentationTimeStamp: videoTimestamp.value, formatDesciption: videoFormat) }
             default:
                 break
@@ -677,27 +677,21 @@ public actor RTMPStream {
 
     /// Creates flv metadata for a stream.
     private func makeMetadata() -> AMFArray {
-        var metadata: AMFObject = [
-            "duration": 0
-        ]
+        // https://github.com/shogo4405/HaishinKit.swift/issues/1410
+        var metadata: AMFObject = ["duration": 0]
         if outgoing.videoInputFormat != nil {
             metadata["width"] = outgoing.videoSettings.videoSize.width
             metadata["height"] = outgoing.videoSettings.videoSize.height
-            #if os(iOS) || os(macOS) || os(tvOS)
-            // metadata["framerate"] = stream.frameRate
-            #endif
-            switch outgoing.videoSettings.format {
-            case .h264:
-                metadata["videocodecid"] = FLVVideoCodec.avc.rawValue
-            case .hevc:
-                metadata["videocodecid"] = FLVVideoFourCC.hevc.rawValue
-            }
+            metadata["videocodecid"] = outgoing.videoSettings.format.codecid
             metadata["videodatarate"] = outgoing.videoSettings.bitRate / 1000
         }
         if let audioFormat = outgoing.audioInputFormat?.audioStreamBasicDescription {
-            metadata["audiocodecid"] = FLVAudioCodec.aac.rawValue
+            metadata["audiocodecid"] = outgoing.audioSettings.format.codecid
             metadata["audiodatarate"] = outgoing.audioSettings.bitRate / 1000
-            metadata["audiosamplerate"] = audioFormat.mSampleRate
+            metadata["audiosamplerate"] = outgoing.audioSettings.format.makeSampleRate(
+                audioFormat.mSampleRate,
+                output: outgoing.audioSettings.sampleRate
+            )
         }
         return AMFArray(metadata)
     }
@@ -741,11 +735,10 @@ extension RTMPStream: HKStream {
             if sampleBuffer.formatDescription?.isCompressed == true {
                 do {
                     let decodeTimeStamp = sampleBuffer.decodeTimeStamp.isValid ? sampleBuffer.decodeTimeStamp : sampleBuffer.presentationTimeStamp
-                    let compositionTime = videoTimestamp.getCompositionTime(sampleBuffer)
                     let timedelta = try videoTimestamp.update(decodeTimeStamp)
                     frameCount += 1
                     videoFormat = sampleBuffer.formatDescription
-                    guard let message = RTMPVideoMessage(streamId: id, timestamp: timedelta, compositionTime: compositionTime, sampleBuffer: sampleBuffer) else {
+                    guard let message = RTMPVideoMessage(streamId: id, timestamp: timedelta, sampleBuffer: sampleBuffer) else {
                         return
                     }
                     doOutput(.one, chunkStreamId: .video, message: message)

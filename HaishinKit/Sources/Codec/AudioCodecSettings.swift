@@ -1,7 +1,7 @@
 import AVFAudio
 import Foundation
 
-/// Constraints on the audio codec  compression settings.
+/// Constraints on the audio codec compression settings.
 public struct AudioCodecSettings: Codable, Sendable {
     /// The default value.
     public static let `default` = AudioCodecSettings()
@@ -11,9 +11,11 @@ public struct AudioCodecSettings: Codable, Sendable {
     public static let maximumNumberOfChannels: UInt32 = 8
 
     /// The type of the AudioCodec supports format.
-    enum Format: Codable {
+    public enum Format: Codable, Sendable {
         /// The AAC format.
         case aac
+        /// The OPUS format.
+        case opus
         /// The PCM format.
         case pcm
 
@@ -21,6 +23,8 @@ public struct AudioCodecSettings: Codable, Sendable {
             switch self {
             case .aac:
                 return kAudioFormatMPEG4AAC
+            case .opus:
+                return kAudioFormatOpus
             case .pcm:
                 return kAudioFormatLinearPCM
             }
@@ -30,6 +34,8 @@ public struct AudioCodecSettings: Codable, Sendable {
             switch self {
             case .aac:
                 return UInt32(MPEG4ObjectID.AAC_LC.rawValue)
+            case .opus:
+                return 0
             case .pcm:
                 return kAudioFormatFlagIsNonInterleaved
                     | kAudioFormatFlagIsPacked
@@ -37,18 +43,11 @@ public struct AudioCodecSettings: Codable, Sendable {
             }
         }
 
-        var framesPerPacket: UInt32 {
-            switch self {
-            case .aac:
-                return 1024
-            case .pcm:
-                return 1
-            }
-        }
-
         var packetSize: UInt32 {
             switch self {
             case .aac:
+                return 1
+            case .opus:
                 return 1
             case .pcm:
                 return 1024
@@ -59,6 +58,8 @@ public struct AudioCodecSettings: Codable, Sendable {
             switch self {
             case .aac:
                 return 0
+            case .opus:
+                return 0
             case .pcm:
                 return 32
             }
@@ -67,6 +68,8 @@ public struct AudioCodecSettings: Codable, Sendable {
         var bytesPerPacket: UInt32 {
             switch self {
             case .aac:
+                return 0
+            case .opus:
                 return 0
             case .pcm:
                 return (bitsPerChannel / 8)
@@ -77,6 +80,8 @@ public struct AudioCodecSettings: Codable, Sendable {
             switch self {
             case .aac:
                 return 0
+            case .opus:
+                return 0
             case .pcm:
                 return (bitsPerChannel / 8)
             }
@@ -85,6 +90,8 @@ public struct AudioCodecSettings: Codable, Sendable {
         var inputBufferCounts: Int {
             switch self {
             case .aac:
+                return 6
+            case .opus:
                 return 6
             case .pcm:
                 return 1
@@ -95,8 +102,40 @@ public struct AudioCodecSettings: Codable, Sendable {
             switch self {
             case .aac:
                 return 1
+            case .opus:
+                return 1
             case .pcm:
                 return 24
+            }
+        }
+
+        var supportedSampleRate: [Float64]? {
+            switch self {
+            case .opus:
+                return [8000.0, 12000.0, 16000.0, 24000.0, 48000.0]
+            default:
+                return nil
+            }
+        }
+
+        func makeSampleRate(_ input: Float64, output: Float64) -> Float64 {
+            let sampleRate = output == 0 ? input : output
+            guard let supportedSampleRate else {
+                return sampleRate
+            }
+            return supportedSampleRate.sorted { pow($0 - sampleRate, 2) < pow($1 - sampleRate, 2) }.first ?? sampleRate
+        }
+
+        func makeFramesPerPacket(_ sampleRate: Double) -> UInt32 {
+            switch self {
+            case .aac:
+                return 1024
+            case .opus:
+                // https://www.rfc-editor.org/rfc/rfc6716#section-2.1.4
+                let frameDurationSec = 0.02
+                return UInt32(sampleRate * frameDurationSec)
+            case .pcm:
+                return 1
             }
         }
 
@@ -104,19 +143,22 @@ public struct AudioCodecSettings: Codable, Sendable {
             switch self {
             case .aac:
                 return AVAudioCompressedBuffer(format: format, packetCapacity: 1, maximumPacketSize: 1024 * Int(format.channelCount))
+            case .opus:
+                return AVAudioCompressedBuffer(format: format, packetCapacity: 1, maximumPacketSize: 1024 * Int(format.channelCount))
             case .pcm:
                 return AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 1024)
             }
         }
 
-        func makeOutputAudioFormat(_ format: AVAudioFormat) -> AVAudioFormat? {
+        func makeOutputAudioFormat(_ format: AVAudioFormat, sampleRate: Float64) -> AVAudioFormat? {
+            let mSampleRate = makeSampleRate(format.sampleRate, output: sampleRate)
             let config = AudioSpecificConfig.ChannelConfiguration(channelCount: format.channelCount)
             var streamDescription = AudioStreamBasicDescription(
-                mSampleRate: format.sampleRate,
+                mSampleRate: mSampleRate,
                 mFormatID: formatID,
                 mFormatFlags: formatFlags,
                 mBytesPerPacket: bytesPerPacket,
-                mFramesPerPacket: framesPerPacket,
+                mFramesPerPacket: makeFramesPerPacket(mSampleRate),
                 mBytesPerFrame: bytesPerFrame,
                 mChannelsPerFrame: min(
                     config?.channelCount ?? format.channelCount,
@@ -141,14 +183,25 @@ public struct AudioCodecSettings: Codable, Sendable {
     /// Specifies the map of the output to input channels.
     public var channelMap: [Int]?
 
+    /// Specifies the sampleRate of audio output. A value of 0 will be the same as the main track source.
+    public let sampleRate: Float64
+
     /// Specifies the output format.
-    var format: AudioCodecSettings.Format = .aac
+    public var format: AudioCodecSettings.Format = .aac
 
     /// Creates a new instance.
-    public init(bitRate: Int = AudioCodecSettings.defaultBitRate, downmix: Bool = true, channelMap: [Int]? = nil) {
+    public init(
+        bitRate: Int = AudioCodecSettings.defaultBitRate,
+        downmix: Bool = true,
+        channelMap: [Int]? = nil,
+        sampleRate: Float64 = 0,
+        format: AudioCodecSettings.Format = .aac
+    ) {
         self.bitRate = bitRate
         self.downmix = downmix
         self.channelMap = channelMap
+        self.sampleRate = sampleRate
+        self.format = format
     }
 
     func apply(_ converter: AVAudioConverter?, oldValue: AudioCodecSettings?) {

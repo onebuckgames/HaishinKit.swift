@@ -37,6 +37,10 @@ final class AudioRingBuffer {
         self.outputBuffer.frameLength = self.outputBuffer.frameCapacity
     }
 
+    func isDataAvailable(_ inNumberFrames: UInt32) -> Bool {
+        return inNumberFrames <= counts
+    }
+
     func append(_ sampleBuffer: CMSampleBuffer) {
         guard CMSampleBufferDataIsReady(sampleBuffer) else {
             return
@@ -93,45 +97,6 @@ final class AudioRingBuffer {
         skip = Int(max(when.sampleTime - sampleTime, 0))
         sampleTime += Int64(skip)
         append(inputBuffer)
-    }
-
-    @inline(__always)
-    private func append(_ audioPCMBuffer: AVAudioPCMBuffer, offset: Int = 0) {
-        let numSamples = min(Int(audioPCMBuffer.frameLength) - offset, Int(outputBuffer.frameLength) - head)
-        if inputFormat.isInterleaved {
-            let channelCount = Int(inputFormat.channelCount)
-            switch inputFormat.commonFormat {
-            case .pcmFormatInt16:
-                memcpy(outputBuffer.int16ChannelData?[0].advanced(by: head * channelCount), audioPCMBuffer.int16ChannelData?[0].advanced(by: offset * channelCount), numSamples * channelCount * 2)
-            case .pcmFormatInt32:
-                memcpy(outputBuffer.int32ChannelData?[0].advanced(by: head * channelCount), audioPCMBuffer.int32ChannelData?[0].advanced(by: offset * channelCount), numSamples * channelCount * 4)
-            case .pcmFormatFloat32:
-                memcpy(outputBuffer.floatChannelData?[0].advanced(by: head * channelCount), audioPCMBuffer.floatChannelData?[0].advanced(by: offset * channelCount), numSamples * channelCount * 4)
-            default:
-                break
-            }
-        } else {
-            for i in 0..<Int(inputFormat.channelCount) {
-                switch inputFormat.commonFormat {
-                case .pcmFormatInt16:
-                    memcpy(outputBuffer.int16ChannelData?[i].advanced(by: head), audioPCMBuffer.int16ChannelData?[i].advanced(by: offset), numSamples * 2)
-                case .pcmFormatInt32:
-                    memcpy(outputBuffer.int32ChannelData?[i].advanced(by: head), audioPCMBuffer.int32ChannelData?[i].advanced(by: offset), numSamples * 4)
-                case .pcmFormatFloat32:
-                    memcpy(outputBuffer.floatChannelData?[i].advanced(by: head), audioPCMBuffer.floatChannelData?[i].advanced(by: offset), numSamples * 4)
-                default:
-                    break
-                }
-            }
-        }
-        head += numSamples
-        sampleTime += Int64(numSamples)
-        if head == outputBuffer.frameLength {
-            head = 0
-            if 0 < Int(audioPCMBuffer.frameLength) - numSamples {
-                append(audioPCMBuffer, offset: numSamples)
-            }
-        }
     }
 
     func render(_ inNumberFrames: UInt32, ioData: UnsafeMutablePointer<AudioBufferList>?, offset: Int = 0) -> OSStatus {
@@ -210,5 +175,51 @@ final class AudioRingBuffer {
             }
         }
         return noErr
+    }
+
+    func reset() {
+        head = 0
+        tail = 0
+        skip = 0
+        sampleTime = 0
+    }
+
+    @inline(__always)
+    private func append(_ audioPCMBuffer: AVAudioPCMBuffer, offset: Int = 0) {
+        let numSamples = min(Int(audioPCMBuffer.frameLength) - offset, Int(outputBuffer.frameLength) - head)
+        if inputFormat.isInterleaved {
+            let channelCount = Int(inputFormat.channelCount)
+            switch inputFormat.commonFormat {
+            case .pcmFormatInt16:
+                memcpy(outputBuffer.int16ChannelData?[0].advanced(by: head * channelCount), audioPCMBuffer.int16ChannelData?[0].advanced(by: offset * channelCount), numSamples * channelCount * 2)
+            case .pcmFormatInt32:
+                memcpy(outputBuffer.int32ChannelData?[0].advanced(by: head * channelCount), audioPCMBuffer.int32ChannelData?[0].advanced(by: offset * channelCount), numSamples * channelCount * 4)
+            case .pcmFormatFloat32:
+                memcpy(outputBuffer.floatChannelData?[0].advanced(by: head * channelCount), audioPCMBuffer.floatChannelData?[0].advanced(by: offset * channelCount), numSamples * channelCount * 4)
+            default:
+                break
+            }
+        } else {
+            for i in 0..<Int(inputFormat.channelCount) {
+                switch inputFormat.commonFormat {
+                case .pcmFormatInt16:
+                    memcpy(outputBuffer.int16ChannelData?[i].advanced(by: head), audioPCMBuffer.int16ChannelData?[i].advanced(by: offset), numSamples * 2)
+                case .pcmFormatInt32:
+                    memcpy(outputBuffer.int32ChannelData?[i].advanced(by: head), audioPCMBuffer.int32ChannelData?[i].advanced(by: offset), numSamples * 4)
+                case .pcmFormatFloat32:
+                    memcpy(outputBuffer.floatChannelData?[i].advanced(by: head), audioPCMBuffer.floatChannelData?[i].advanced(by: offset), numSamples * 4)
+                default:
+                    break
+                }
+            }
+        }
+        head += numSamples
+        sampleTime += Int64(numSamples)
+        if head == outputBuffer.frameLength {
+            head = 0
+            if 0 < Int(audioPCMBuffer.frameLength) - numSamples {
+                append(audioPCMBuffer, offset: numSamples)
+            }
+        }
     }
 }

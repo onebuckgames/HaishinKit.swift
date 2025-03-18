@@ -246,7 +246,6 @@ final class CaptureSession {
     @objc
     private func sessionRuntimeError(_ notification: NSNotification) {
         guard
-            let session = notification.object as? AVCaptureSession,
             let errorValue = notification.userInfo?[AVCaptureSessionErrorKey] as? NSError else {
             return
         }
@@ -257,9 +256,6 @@ final class CaptureSession {
     @available(tvOS 17.0, *)
     @objc
     private func sessionWasInterrupted(_ notification: Notification) {
-        guard let session = notification.object as? AVCaptureSession else {
-            return
-        }
         isInturrepedContinutation?.yield(true)
     }
 

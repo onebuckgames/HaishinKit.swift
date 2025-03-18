@@ -9,8 +9,6 @@ public actor SRTStream {
     @Published public private(set) var readyState: HKStreamReadyState = .idle
     public private(set) var videoTrackId: UInt8? = UInt8.max
     public private(set) var audioTrackId: UInt8? = UInt8.max
-    private var name: String?
-    private var action: (() async -> Void)?
     private var outputs: [any HKStreamOutput] = []
     private var bitrateStorategy: (any HKStreamBitRateStrategy)?
     private lazy var writer = TSWriter()
@@ -29,9 +27,14 @@ public actor SRTStream {
         outputs.removeAll()
     }
 
-    /// Sends streaming audio, vidoe and data message from client.
+    /// Sends streaming audio and video from client.
+    ///
+    /// - Warning: As a prerequisite, SRTConnection must be connected. In the future, an exception will be thrown.
     public func publish(_ name: String? = "") async {
-        guard let name else {
+        guard let connection, await connection.connected else {
+            return
+        }
+        guard name != nil else {
             switch readyState {
             case .publishing:
                 await close()
@@ -40,43 +43,44 @@ public actor SRTStream {
             }
             return
         }
-        if await connection?.connected == true {
-            readyState = .publishing
-            outgoing.startRunning()
-            if outgoing.videoInputFormat != nil {
-                writer.expectedMedias.insert(.video)
+        readyState = .publishing
+        outgoing.startRunning()
+        if outgoing.videoInputFormat != nil {
+            writer.expectedMedias.insert(.video)
+        }
+        if outgoing.audioInputFormat != nil {
+            writer.expectedMedias.insert(.audio)
+        }
+        Task {
+            for await buffer in outgoing.videoOutputStream {
+                append(buffer)
             }
-            if outgoing.audioInputFormat != nil {
-                writer.expectedMedias.insert(.audio)
+        }
+        Task {
+            for await buffer in outgoing.audioOutputStream {
+                append(buffer.0, when: buffer.1)
             }
-            Task {
-                for await buffer in outgoing.videoOutputStream {
-                    append(buffer)
-                }
+        }
+        Task {
+            for await buffer in outgoing.videoInputStream {
+                outgoing.append(video: buffer)
             }
-            Task {
-                for await buffer in outgoing.audioOutputStream {
-                    append(buffer.0, when: buffer.1)
-                }
+        }
+        Task {
+            for await data in writer.output {
+                await connection.send(data)
             }
-            Task {
-                for await buffer in outgoing.videoInputStream {
-                    outgoing.append(video: buffer)
-                }
-            }
-            Task {
-                for await data in writer.output {
-                    await connection?.send(data)
-                }
-            }
-        } else {
-            action = { [weak self] in await self?.publish(name) }
         }
     }
 
-    /// Playback streaming audio and video message from server.
+    /// Playback streaming audio and video from server.
+    /// 
+    /// - Warning: As a prerequisite, SRTConnection must be connected. In the future, an exception will be thrown.
     public func play(_ name: String? = "") async {
-        guard let name else {
+        guard let connection, await connection.connected else {
+            return
+        }
+        guard name != nil else {
             switch readyState {
             case .playing:
                 await close()
@@ -85,18 +89,14 @@ public actor SRTStream {
             }
             return
         }
-        if await connection?.connected == true {
-            await connection?.recv()
-            Task {
-                await incoming.startRunning()
-                for await buffer in reader.output {
-                    await incoming.append(buffer.1)
-                }
+        await connection.recv()
+        Task {
+            await incoming.startRunning()
+            for await buffer in reader.output {
+                await incoming.append(buffer.1)
             }
-            readyState = .playing
-        } else {
-            action = { [weak self] in await self?.play(name) }
         }
+        readyState = .playing
     }
 
     /// Stops playing or publishing and makes available other uses.
