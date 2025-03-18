@@ -3,84 +3,96 @@ import HaishinKit
 import libsrt
 import Logboard
 
-private let kSRTSOcket_payloadSize: Int = 1316
-
 final actor SRTSocket {
     static let payloadSize: Int = 1316
 
+    enum Error: Swift.Error {
+        case notConnected
+        case illegalState(message: String)
+    }
+
+    enum Status: Int, CustomDebugStringConvertible {
+        case unknown
+        case `init`
+        case opened
+        case listening
+        case connecting
+        case connected
+        case broken
+        case closing
+        case closed
+        case nonexist
+
+        var debugDescription: String {
+            switch self {
+            case .unknown:
+                return "unknown"
+            case .`init`:
+                return "init"
+            case .opened:
+                return "opened"
+            case .listening:
+                return "listening"
+            case .connecting:
+                return "connecting"
+            case .connected:
+                return "connected"
+            case .broken:
+                return "broken"
+            case .closing:
+                return "closing"
+            case .closed:
+                return "closed"
+            case .nonexist:
+                return "nonexist"
+            }
+        }
+
+        init?(_ status: SRT_SOCKSTATUS) {
+            self.init(rawValue: Int(status.rawValue))
+            defer {
+                logger.trace(debugDescription)
+            }
+        }
+    }
+
     var inputs: AsyncStream<Data> {
-        AsyncStream<Data> { condination in
+        AsyncStream<Data> { continuation in
             // If Task.detached is not used, closing will result in a deadlock.
             Task.detached {
                 while await self.connected {
                     let result = await self.recvmsg()
-                    if 0 < result {
-                        condination.yield(await self.incomingBuffer.subdata(in: 0..<Data.Index(result)))
+                    if 0 <= result {
+                        continuation.yield(await self.incomingBuffer.subdata(in: 0..<Data.Index(result)))
                     } else {
-                        condination.finish()
+                        continuation.finish()
                     }
                 }
             }
         }
     }
 
-    var accept: AsyncStream<SRTSocket> {
-        AsyncStream<SRTSocket> { condination in
-            Task.detached {
-                repeat {
-                    do {
-                        let client = try await self.accept()
-                        condination.yield(client)
-                        try await Task.sleep(nanoseconds: 1_000_000_000)
-                    } catch {
-                        condination.finish()
-                    }
-                } while await self.connected
-            }
-        }
+    var performanceData: SRTPerformanceData {
+        .init(mon: perf)
     }
 
-    private(set) var mode: SRTMode = .caller
-    private(set) var perf: CBytePerfMon = .init()
-    private(set) var socket: SRTSOCKET = SRT_INVALID_SOCK
-    private(set) var status: SRT_SOCKSTATUS = SRTS_INIT {
+    var status: Status {
+        .init(srt_getsockstate(socket)) ?? .unknown
+    }
+
+    private(set) var isRunning = false
+    private var perf: CBytePerfMon = .init()
+    private var socket: SRTSOCKET = SRT_INVALID_SOCK
+    private var options: [SRTSocketOption: any Sendable] = [:]
+    private var outputs: AsyncStream<Data>.Continuation? {
         didSet {
-            guard status != oldValue else {
-                return
-            }
-            switch status {
-            case SRTS_INIT: // 1
-                logger.trace("SRT Socket Init")
-            case SRTS_OPENED:
-                logger.info("SRT Socket opened")
-            case SRTS_LISTENING:
-                logger.trace("SRT Socket Listening")
-            case SRTS_CONNECTING:
-                logger.trace("SRT Socket Connecting")
-            case SRTS_CONNECTED:
-                logger.info("SRT Socket Connected")
-                didConnected()
-            case SRTS_BROKEN:
-                logger.warn("SRT Socket Broken")
-                close()
-            case SRTS_CLOSING:
-                logger.trace("SRT Socket Closing")
-            case SRTS_CLOSED:
-                logger.info("SRT Socket Closed")
-            case SRTS_NONEXIST:
-                logger.warn("SRT Socket Not Exist")
-            default:
-                break
-            }
+            oldValue?.finish()
         }
     }
-    private(set) var options: [SRTSocketOption: Any] = [:]
-    private(set) var connected = false
-    private var totalBytesIn: Int = 0
-    private var totalBytesOut: Int = 0
-    private var queueBytesOut: Int = 0
+    private var connected: Bool {
+        status == .connected
+    }
     private var windowSizeC: Int32 = 1024 * 4
-    private var outputs: AsyncStream<Data>.Continuation?
     private lazy var incomingBuffer: Data = .init(count: Int(windowSizeC))
 
     init() {
@@ -94,20 +106,12 @@ final actor SRTSocket {
         if incomingBuffer.count < windowSizeC {
             incomingBuffer = .init(count: Int(windowSizeC))
         }
-        status = srt_getsockstate(socket)
-        switch status {
-        case SRTS_CONNECTED:
-            didConnected()
-        default:
-            break
-        }
     }
 
-    func open(_ addr: sockaddr_in, mode: SRTMode, options: [SRTSocketOption: any Sendable] = [:]) throws {
+    func open(_ addr: sockaddr_in, mode: SRTMode, options: [SRTSocketOption: any Sendable] = [:]) async throws {
         guard socket == SRT_INVALID_SOCK else {
             return
         }
-        self.mode = mode
         // prepare socket
         socket = srt_create_socket()
         if socket == SRT_INVALID_SOCK {
@@ -142,25 +146,37 @@ final actor SRTSocket {
                 throw makeSocketError()
             }
         }
-        status = srt_getsockstate(socket)
+        await startRunning()
     }
 
-    func close() {
-        guard socket != SRT_INVALID_SOCK else {
-            return
+    func accept() async throws -> SRTSocket {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<SRTSocket, Swift.Error>) in
+            Task.detached { [self] in
+                do {
+                    let accept = srt_accept(await socket, nil, nil)
+                    guard -1 < accept else {
+                        throw await makeSocketError()
+                    }
+                    let socket = try await SRTSocket(socket: accept)
+                    await socket.startRunning()
+                    continuation.resume(returning: socket)
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
         }
-        srt_close(socket)
-        socket = SRT_INVALID_SOCK
     }
 
-    func send(_ data: Data) {
-        for data in data.chunk(kSRTSOcket_payloadSize) {
-            queueBytesOut += data.count
+    func send(_ data: Data) throws {
+        guard connected else {
+            throw Error.notConnected
+        }
+        for data in data.chunk(Self.payloadSize) {
             outputs?.yield(data)
         }
     }
 
-    func configure(_ binding: SRTSocketOption.Binding) -> Bool {
+    private func configure(_ binding: SRTSocketOption.Binding) -> Bool {
         let failures = SRTSocketOption.configure(socket, binding: binding, options: options)
         guard failures.isEmpty else {
             logger.error(failures)
@@ -169,67 +185,82 @@ final actor SRTSocket {
         return true
     }
 
-    func bstats() -> Int32 {
+    private func bstats() -> Int32 {
         guard socket != SRT_INVALID_SOCK else {
             return SRT_ERROR
         }
         return srt_bstats(socket, &perf, 1)
     }
 
-    private func didConnected() {
-        connected = true
-        let (stream, continuation) = AsyncStream<Data>.makeStream()
-        outputs = continuation
-        Task {
-            for await data in stream where connected {
-                _ = sendmsg2(data)
-                totalBytesOut += data.count
-                queueBytesOut -= data.count
-            }
-        }
-    }
-
     private func makeSocketError() -> SRTError {
         let error_message = String(cString: srt_getlasterror_str())
-        logger.error(error_message)
-        return SRTError.illegalState(message: error_message)
-    }
-
-    private func accept() async throws -> SRTSocket {
-        let accept = srt_accept(socket, nil, nil)
-        return try await SRTSocket(socket: accept)
+        defer {
+            logger.error(error_message)
+        }
+        return .illegalState(message: error_message)
     }
 
     @inline(__always)
-    private func sendmsg2(_ data: Data) -> Int32 {
+    private func sendmsg(_ data: Data) -> Int32 {
         return data.withUnsafeBytes { pointer in
             guard let buffer = pointer.baseAddress?.assumingMemoryBound(to: CChar.self) else {
                 return SRT_ERROR
             }
-            return srt_sendmsg2(socket, buffer, Int32(data.count), nil)
+            return srt_sendmsg(socket, buffer, Int32(data.count), -1, 0)
         }
     }
 
     @inline(__always)
     private func recvmsg() -> Int32 {
-        let result = incomingBuffer.withUnsafeMutableBytes { pointer in
+        return incomingBuffer.withUnsafeMutableBytes { pointer in
             guard let buffer = pointer.baseAddress?.assumingMemoryBound(to: CChar.self) else {
                 return SRT_ERROR
             }
             return srt_recvmsg(socket, buffer, windowSizeC)
         }
-        totalBytesIn += Int(result)
-        return result
+    }
+}
+
+extension SRTSocket: AsyncRunner {
+    // MARK: AsyncRunner
+    func startRunning() async {
+        guard !isRunning else {
+            return
+        }
+        let stream = AsyncStream<Data> { continuation in
+            self.outputs = continuation
+        }
+        Task {
+            for await data in stream {
+                let result = sendmsg(data)
+                if result == -1 {
+                    await stopRunning()
+                }
+            }
+        }
+        isRunning = true
+    }
+
+    func stopRunning() async {
+        guard isRunning else {
+            return
+        }
+        srt_close(socket)
+        socket = SRT_INVALID_SOCK
+        outputs = nil
+        isRunning = false
     }
 }
 
 extension SRTSocket: NetworkTransportReporter {
     // MARK: NetworkTransportReporter
     func makeNetworkTransportReport() -> NetworkTransportReport {
+        _ = bstats()
+        let performanceData = self.performanceData
         return .init(
-            queueBytesOut: queueBytesOut,
-            totalBytesIn: totalBytesIn,
-            totalBytesOut: totalBytesOut
+            queueBytesOut: Int(performanceData.byteSndBuf),
+            totalBytesIn: Int(performanceData.byteRecvTotal),
+            totalBytesOut: Int(performanceData.byteSentTotal)
         )
     }
 
