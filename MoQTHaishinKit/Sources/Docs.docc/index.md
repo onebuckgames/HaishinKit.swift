@@ -1,4 +1,5 @@
 # ``MoQTHaishinKit``
+This module supports the MoQT protocol.
 
 ## Overview
 - This is a Swift implementation of MoQT, based on draft7. It is being developed for research and testing purposes.

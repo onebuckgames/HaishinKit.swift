@@ -4,67 +4,86 @@ import Testing
 import libsrt
 @testable import SRTHaishinKit
 
-@Suite struct SRTSocketOptionsTests {
+@Suite actor SRTSocketOptionTests {
     @Test func parseUri() async {
-        let url = URL(string: "srt://localhost:9000?passphrase=1234&streamid=5678&latency=1935&sndsyn=1&transtype=file")
-        let options = SRTSocketOption.from(uri: url)
-        #expect(options[.passphrase] as! String == "1234")
-        #expect(options[.streamid] as! String == "5678")
-        #expect(options[.latency] as! Int32 == 1935)
-        #expect(options[.sndsyn] as! Bool == true)
-        #expect(options[.transtype] as! SRT_TRANSTYPE == SRTT_FILE)
+        guard
+            let url = SRTSocketURL(URL(string: "srt://localhost:9000?passphrase=1234&streamid=5678&latency=1935&sndsyn=1&transtype=file")) else {
+            return
+        }
+        let options = url.options
+        #expect(options.first { $0.name == .passphrase }?.stringValue == "1234")
+        #expect(options.first { $0.name == .streamid }?.stringValue == "5678")
+        #expect(options.first { $0.name == .latency }?.intValue == 1935)
+        #expect(options.first { $0.name == .sndsyn }?.boolValue == true)
+        #expect(options.first { $0.name == .transtype }?.stringValue == SRTT_FILE.rawValue.description)
     }
 
     @Test func string() throws {
         let socket = srt_create_socket()
-        let string = "hello"
-        try SRTSocketOption.streamid.setOption(socket, value: string)
-        #expect(try SRTSocketOption.streamid.getOption(socket) == string.data(using: .ascii))
+        let expect = try SRTSocketOption(name: .streamid, value: "hello")
+        try? expect.setSockflag(socket)
+        #expect(try SRTSocketOption(name: .streamid, socket: socket).stringValue == "hello")
         srt_close(socket)
     }
 
     @Test func int32() throws {
         let socket = srt_create_socket()
-        var int32: Int32 = 100
-        try SRTSocketOption.latency.setOption(socket, value: int32)
-        #expect(try SRTSocketOption.latency.getOption(socket) == Data(bytes: &int32, count: MemoryLayout<Int32>.size))
+        let expect = try SRTSocketOption(name: .latency, value: "100")
+        try? expect.setSockflag(socket)
+        #expect(try SRTSocketOption(name: .latency, socket: socket).intValue == 100)
         srt_close(socket)
     }
 
     @Test func int64() throws {
         let socket = srt_create_socket()
-        var int64: Int64 = 1000
-        try SRTSocketOption.inputbw.setOption(socket, value: int64)
-        #expect(try SRTSocketOption.inputbw.getOption(socket) == Data(bytes: &int64, count: MemoryLayout<Int64>.size))
+        let expect = try SRTSocketOption(name: .inputbw, value: "1000")
+        try? expect.setSockflag(socket)
+        #expect(try SRTSocketOption(name: .inputbw, socket: socket).intValue == 1000)
         srt_close(socket)
     }
 
     @Test func bool() throws {
         let socket = srt_create_socket()
-        var bool = true
-        try SRTSocketOption.tlpktdrop.setOption(socket, value: bool)
-        #expect(try SRTSocketOption.tlpktdrop.getOption(socket) == Data(bytes: &bool, count: MemoryLayout<Bool>.size))
+        let expect = try SRTSocketOption(name: .tlpktdrop, value: "true")
+        try? expect.setSockflag(socket)
+        #expect(try SRTSocketOption(name: .tlpktdrop, socket: socket).boolValue == true)
         srt_close(socket)
     }
 
     @Test func transtype() throws {
         let socket = srt_create_socket()
-        var bool = true
         // The default is true for Live mode, and false for File mode.
         // It does not support transtype.getOption, so I will test it by observing changes in the surrounding properties.
-        #expect(try SRTSocketOption.nakreport.getOption(socket) == Data(bytes: &bool, count: MemoryLayout<Bool>.size))
-        try SRTSocketOption.transtype.setOption(socket, value: SRTT_FILE)
-        bool = false
-        #expect(try SRTSocketOption.nakreport.getOption(socket) == Data(bytes: &bool, count: MemoryLayout<Bool>.size))
+        #expect(try SRTSocketOption(name: .nakreport, socket: socket).boolValue == true)
+        let expect = try SRTSocketOption(name: .transtype, value: "file")
+        try? expect.setSockflag(socket)
+        #expect(try SRTSocketOption(name: .nakreport, socket: socket).boolValue == false)
         srt_close(socket)
     }
 
+    @Test func connection() async throws {
+        let connection = SRTConnection()
+        let option = try SRTSocketOption(name: .nakreport, value: "no")
+        try await connection.setSocketOption(option)
+        let result = try await connection.getSocketOption(.nakreport)
+        #expect(result?.boolValue == false)
+    }
+
+    @Test func rendezvous() throws {
+        guard
+            let url = SRTSocketURL(URL(string: "srt://:9000?adapter=0.0.0.0")) else {
+            return
+        }
+        #expect(url.local != nil)
+        #expect(url.mode == SRTMode.rendezvous)
+    }
+
     @Test func mode() throws {
-        #expect(SRTSocketOption.getMode(uri: URL(string: "srt://192.168.1.1:9000?mode=caller")) == SRTMode.caller)
-        #expect(SRTSocketOption.getMode(uri: URL(string: "srt://192.168.1.1:9000?mode=client")) == SRTMode.caller)
-        #expect(SRTSocketOption.getMode(uri: URL(string: "srt://192.168.1.1:9000?mode=listener")) == SRTMode.listener)
-        #expect(SRTSocketOption.getMode(uri: URL(string: "srt://192.168.1.1:9000?mode=server")) == SRTMode.listener)
-        #expect(SRTSocketOption.getMode(uri: URL(string: "srt://192.168.1.1:9000")) == SRTMode.caller)
-        #expect(SRTSocketOption.getMode(uri: URL(string: "srt://:9000")) == SRTMode.listener)
+        #expect(SRTSocketURL(URL(string: "srt://192.168.1.1:9000?mode=caller"))?.mode == SRTMode.caller)
+        #expect(SRTSocketURL(URL(string: "srt://192.168.1.1:9000?mode=client"))?.mode == SRTMode.caller)
+        #expect(SRTSocketURL(URL(string: "srt://192.168.1.1:9000?mode=listener"))?.mode == SRTMode.listener)
+        #expect(SRTSocketURL(URL(string: "srt://192.168.1.1:9000?mode=server"))?.mode == SRTMode.listener)
+        #expect(SRTSocketURL(URL(string: "srt://192.168.1.1:9000"))?.mode == SRTMode.caller)
+        #expect(SRTSocketURL(URL(string: "srt://:9000"))?.mode == SRTMode.listener)
     }
 }

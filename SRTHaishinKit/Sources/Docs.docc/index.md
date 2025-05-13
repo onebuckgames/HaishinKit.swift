@@ -12,7 +12,7 @@ This is a module that supports SRT protocol. It internally uses a library that i
 - SRT Mode
   - [x] caller
   - [x] listener
-  - [ ] rendezvous
+  - [x] rendezvous
 
 ## 📓 Usage
 ### Logging

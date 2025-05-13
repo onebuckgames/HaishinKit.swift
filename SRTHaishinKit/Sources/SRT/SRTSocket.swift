@@ -83,7 +83,6 @@ final actor SRTSocket {
     private(set) var isRunning = false
     private var perf: CBytePerfMon = .init()
     private var socket: SRTSOCKET = SRT_INVALID_SOCK
-    private var options: [SRTSocketOption: any Sendable] = [:]
     private var outputs: AsyncStream<Data>.Continuation? {
         didSet {
             oldValue?.finish()
@@ -96,11 +95,12 @@ final actor SRTSocket {
     private lazy var incomingBuffer: Data = .init(count: Int(windowSizeC))
 
     init() {
+        socket = srt_create_socket()
     }
 
-    init(socket: SRTSOCKET) async throws {
+    init(socket: SRTSOCKET, options: [SRTSocketOption]) async throws {
         self.socket = socket
-        guard configure(.post) else {
+        guard configure(options, restriction: .post) else {
             throw makeSocketError()
         }
         if incomingBuffer.count < windowSizeC {
@@ -108,48 +108,66 @@ final actor SRTSocket {
         }
     }
 
-    func open(_ addr: sockaddr_in, mode: SRTMode, options: [SRTSocketOption: any Sendable] = [:]) async throws {
-        guard socket == SRT_INVALID_SOCK else {
-            return
-        }
-        // prepare socket
-        socket = srt_create_socket()
+    func getSocketOption(_ name: SRTSocketOption.Name) throws -> SRTSocketOption {
+        return try SRTSocketOption(name: name, socket: socket)
+    }
+
+    func setSocketOption(_ option: SRTSocketOption) throws {
+        try option.setSockflag(socket)
+    }
+
+    func open(_ url: SRTSocketURL) async throws {
         if socket == SRT_INVALID_SOCK {
             throw makeSocketError()
         }
-        self.options = options
-        guard configure(.pre) else {
+        guard configure(url.options, restriction: .pre) else {
             throw makeSocketError()
         }
-        // prepare connect
-        var addr_cp = addr
-        var stat = withUnsafePointer(to: &addr_cp) { ptr -> Int32 in
-            let psa = UnsafeRawPointer(ptr).assumingMemoryBound(to: sockaddr.self)
-            return mode.open(socket, psa, Int32(MemoryLayout.size(ofValue: addr)))
-        }
-        if stat == SRT_ERROR {
+        let status: Int32 = try {
+            switch url.mode {
+            case .caller:
+                guard var remote = url.remote else {
+                    return SRT_ERROR
+                }
+                var remoteaddr = remote.makeSockaddr()
+                return srt_connect(socket, &remoteaddr, Int32(remote.size))
+            case .listener:
+                guard var local = url.local else {
+                    return SRT_ERROR
+                }
+                var localaddr = local.makeSockaddr()
+                let status = srt_bind(socket, &localaddr, Int32(local.size))
+                guard status != SRT_ERROR else {
+                    throw makeSocketError()
+                }
+                return srt_listen(socket, 1)
+            case .rendezvous:
+                guard var remote = url.remote, var local = url.local else {
+                    return SRT_ERROR
+                }
+                var remoteaddr = remote.makeSockaddr()
+                var localaddr = local.makeSockaddr()
+                return srt_rendezvous(socket, &remoteaddr, Int32(remote.size), &localaddr, Int32(local.size))
+            }
+        }()
+        guard status != SRT_ERROR else {
             throw makeSocketError()
         }
-        switch mode {
-        case .caller:
-            guard configure(.post) else {
+        switch url.mode {
+        case .listener:
+            break
+        default:
+            guard configure(url.options, restriction: .post) else {
                 throw makeSocketError()
             }
             if incomingBuffer.count < windowSizeC {
                 incomingBuffer = .init(count: Int(windowSizeC))
             }
-        case .listener:
-            // only supporting a single connection
-            stat = srt_listen(socket, 1)
-            if stat == SRT_ERROR {
-                srt_close(socket)
-                throw makeSocketError()
-            }
         }
         await startRunning()
     }
 
-    func accept() async throws -> SRTSocket {
+    func accept(_ options: [SRTSocketOption]) async throws -> SRTSocket {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<SRTSocket, Swift.Error>) in
             Task.detached { [self] in
                 do {
@@ -157,7 +175,7 @@ final actor SRTSocket {
                     guard -1 < accept else {
                         throw await makeSocketError()
                     }
-                    let socket = try await SRTSocket(socket: accept)
+                    let socket = try await SRTSocket(socket: accept, options: options)
                     await socket.startRunning()
                     continuation.resume(returning: socket)
                 } catch {
@@ -176,8 +194,15 @@ final actor SRTSocket {
         }
     }
 
-    private func configure(_ binding: SRTSocketOption.Binding) -> Bool {
-        let failures = SRTSocketOption.configure(socket, binding: binding, options: options)
+    private func configure(_ options: [SRTSocketOption], restriction: SRTSocketOption.Restriction) -> Bool {
+        var failures: [String] = []
+        for option in options where option.name.restriction == restriction {
+            do {
+                try option.setSockflag(socket)
+            } catch {
+                failures.append(option.name.rawValue)
+            }
+        }
         guard failures.isEmpty else {
             logger.error(failures)
             return false
@@ -196,6 +221,10 @@ final actor SRTSocket {
         let error_message = String(cString: srt_getlasterror_str())
         defer {
             logger.error(error_message)
+        }
+        if socket != SRT_INVALID_SOCK {
+            srt_close(socket)
+            socket = SRT_INVALID_SOCK
         }
         return .illegalState(message: error_message)
     }
