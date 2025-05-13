@@ -50,15 +50,14 @@ public actor RTMPConnection: NetworkConnection {
     public static let defaultObjectEncoding: RTMPObjectEncoding = .amf0
     /// The default an rtmp request time out value (ms).
     public static let defaultRequestTimeout: UInt64 = 3000
-
-    static let videoFourCcInfoMap: AMFObject = [
-        RTMPVideoFourCC.hevc.description: FourCcInfoMask.canDecode.rawValue | FourCcInfoMask.canEncode.rawValue
-    ]
-
-    static let audioFourCcInfoMap: AMFObject = [
+    /// The supported audio fourCc Information.
+    public static let supportedAudioFourCcInfoMap: AMFObject = [
         RTMPAudioFourCC.opus.description: FourCcInfoMask.canEncode.rawValue
     ]
-
+    /// The supported video fourCc Information.
+    public static let supportedVideoFourCcInfoMap: AMFObject = [
+        RTMPVideoFourCC.hevc.description: FourCcInfoMask.canDecode.rawValue | FourCcInfoMask.canEncode.rawValue
+    ]
     private static let connectTransactionId = 1
 
     /**
@@ -161,6 +160,14 @@ public actor RTMPConnection: NetworkConnection {
     public let pageUrl: String?
     /// The name of application.
     public let flashVer: String
+    /// The fourCcList for Enhancing NetConnection connect Command.
+    public let fourCcList: [String]?
+    /// The audio fourCc information for Enhancing NetConnection connect Command.
+    public let audioFourCcInfoMap: AMFObject?
+    /// The video fourCc information for Enhancing NetConnection connect Command.
+    public let videoFourCcInfoMap: AMFObject?
+    /// The capability flags for Enhancing NetConnection connect Command.
+    public let capsEx: Int
     /// The time to wait for TCP/IP Handshake done.
     public let timeout: Int
     /// The RTMP request timeout value. Defaul value is 500 msec.
@@ -232,11 +239,28 @@ public actor RTMPConnection: NetworkConnection {
     private var statusContinuation: AsyncStream<RTMPStatus>.Continuation?
     private var currentTransactionId = RTMPConnection.connectTransactionId
 
-    /// Creates a new connection.
+    /// Creates a new connection with E-RTMP command parameters.
+    ///
+    /// You can specify the fourCcList parameter of the connect command defined in E-RTMP.
+    /// In some RTMP server implementations where these parameters are not supported, you can work around the issue by specifying them as shown below.
+    ///
+    /// ## Example code:
+    /// ```swift
+    /// let connection = RTMPConnection(
+    ///  fourCcList: nil,
+    ///  videoFourCcInfoMap: nil,
+    ///  audioFourCcInfoMap: nil,
+    ///  capsEx: 0
+    /// )
+    /// ```
     public init(
         swfUrl: String? = nil,
         pageUrl: String? = nil,
         flashVer: String = RTMPConnection.defaultFlashVer,
+        fourCcList: [String]? = RTMPConnection.supportedFourCcList,
+        videoFourCcInfoMap: AMFObject? = RTMPConnection.supportedVideoFourCcInfoMap,
+        audioFourCcInfoMap: AMFObject? = RTMPConnection.supportedAudioFourCcInfoMap,
+        capsEx: Int = 0,
         timeout: Int = RTMPConnection.defaultTimeout,
         requestTimeout: UInt64 = RTMPConnection.defaultRequestTimeout,
         chunkSize: Int = RTMPConnection.defaultChunkSizeS,
@@ -245,6 +269,10 @@ public actor RTMPConnection: NetworkConnection {
         self.pageUrl = pageUrl
         self.flashVer = flashVer
         self.timeout = timeout
+        self.fourCcList = fourCcList
+        self.videoFourCcInfoMap = videoFourCcInfoMap
+        self.audioFourCcInfoMap = audioFourCcInfoMap
+        self.capsEx = capsEx
         self.requestTimeout = requestTimeout
         self.chunkSize = chunkSize
         self.qualityOfService = qualityOfService
@@ -562,6 +590,7 @@ public actor RTMPConnection: NetworkConnection {
             objectEncoding: .amf0,
             commandName: "connect",
             commandObject: [
+                "objectEncoding": objectEncoding.rawValue,
                 "app": app,
                 "flashVer": flashVer,
                 "swfUrl": swfUrl,
@@ -572,8 +601,11 @@ public actor RTMPConnection: NetworkConnection {
                 "videoCodecs": SupportVideo.h264.rawValue,
                 "videoFunction": VideoFunction.clientSeek.rawValue,
                 "pageUrl": pageUrl,
-                "fourCcList": Self.supportedFourCcList,
-                "objectEncoding": objectEncoding.rawValue
+                // Enhancing NetConnection connect Command
+                "fourCcList": fourCcList,
+                "videoFourCcInfoMap": videoFourCcInfoMap,
+                "audioFourCcInfoMap": audioFourCcInfoMap,
+                "capsEx": capsEx
             ],
             arguments: arguments
         )

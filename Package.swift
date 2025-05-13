@@ -28,13 +28,14 @@ let package = Package(
         .library(name: "MoQTHaishinKit", targets: ["MoQTHaishinKit"])
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-docc-plugin", from: "1.4.3"),
+        .package(url: "https://github.com/swiftlang/swift-docc-plugin", from: "1.4.3"),
         .package(url: "https://github.com/shogo4405/Logboard.git", "2.5.0"..<"2.6.0")
     ],
     targets: [
         .binaryTarget(
             name: "libsrt",
-            path: "SRTHaishinKit/Vendor/SRT/libsrt.xcframework"
+            url: "https://github.com/HaishinKit/libsrt-xcframework/releases/download/v1.5.4/libsrt.xcframework.zip",
+            checksum: "76879e2802e45ce043f52871a0a6764d57f833bdb729f2ba6663f4e31d658c4a"
         ),
         .target(
             name: "HaishinKit",

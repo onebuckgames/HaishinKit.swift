@@ -29,7 +29,7 @@ public enum SRTLogLevel: Sendable {
     }
 }
 
-/// Constants that indicate the addition to levels the logging system has functional areas .
+/// Constants that indicate the addition to levels the logging system has functional areas.
 public enum SRTLogFunctionalArea: Int32, Sendable {
     /// General uncategorized log, for serious issues only
     case general = 0

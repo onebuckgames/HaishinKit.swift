@@ -21,7 +21,7 @@ Support for AV1 is planned to be implemented once the hardware becomes compatibl
     - [x] HEVC
     - [ ] VP9
     - [ ] AV1
-- [ ] Extending NetConnection connect Command
+- [x] [Extending NetConnection connect Command](https://github.com/veovera/enhanced-rtmp/blob/main/docs/enhanced/enhanced-rtmp-v1.md#extending-netconnection-connect-command)
 - [ ] Metadata Frame
 
 ### [v2](https://github.com/veovera/enhanced-rtmp/blob/main/docs/enhanced/enhanced-rtmp-v2.md)
@@ -41,5 +41,5 @@ Support for AV1 is planned to be implemented once the hardware becomes compatibl
   - [ ] Playback
     - [ ] OPUS
 - [ ] Multitrack Streaming via Enhanced RTMP
-- [ ] Enhancing NetConnection connect Command
+- [x] [Enhancing NetConnection connect Command](https://github.com/veovera/enhanced-rtmp/blob/main/docs/enhanced/enhanced-rtmp-v2.md#enhancing-netconnection-connect-command)
 

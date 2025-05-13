@@ -1,4 +1,4 @@
-# HaishinKit for iOS, macOS, tvOS, visionOS and [Android](https://github.com/shogo4405/HaishinKit.kt).
+# HaishinKit for iOS, macOS, tvOS, visionOS and [Android](https://github.com/HaishinKit/HaishinKit.kt).
 [![GitHub Stars](https://img.shields.io/github/stars/HaishinKit/HaishinKit.swift?style=social)](https://github.com/HaishinKit/HaishinKit.swift/stargazers)
 [![Release](https://img.shields.io/github/v/release/HaishinKit/HaishinKit.swift)](https://github.com/HaishinKit/HaishinKit.swift/releases/latest)
 [![Platform Compatibility](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2FHaishinKit%2FHaishinKit.swift%2Fbadge%3Ftype%3Dplatforms)](https://swiftpackageindex.com/HaishinKit/HaishinKit.swift)
@@ -8,7 +8,7 @@
 
 * Camera and Microphone streaming library via RTMP and SRT for iOS, macOS, tvOS and visionOS.
 * README.md contains unreleased content, which can be tested on the main branch.
-* [API Documentation](https://docs.haishinkit.com/swift/latest/documentation/haishinkit/)
+* [API Documentation](https://docs.haishinkit.com/swift/latest/documentation/)
 
 ## 💖 Sponsors
 Do you need additional support? Technical support on Issues and Discussions is provided only to contributors and academic researchers of HaishinKit. By becoming a sponsor, we can provide the support you need.
@@ -42,7 +42,7 @@ Project name    |Notes       |License
   - [x] Native (RTMP over SSL/TLS)
 - [x] [Enhanced RTMP](HaishinKit/Sources/Docs.docc/E-RTMP.md)
 
-### ✏️ [SRT(beta)](SRTHaishinKit/Sources/Docs.docc/index.md)
+### ✏️ [SRT](SRTHaishinKit/Sources/Docs.docc/index.md)
 - Ingest
   - H264, HEVC and AAC support.
 - Playback
@@ -50,7 +50,7 @@ Project name    |Notes       |License
 - SRT Mode
   - [x] caller
   - [x] listener
-  - [ ] rendezvous
+  - [x] rendezvous
 
 ### ✏️ [MOQT(alpha)](MoQTHaishinKit/Sources/Docs.docc/index.md)
 > [!NOTE]
@@ -125,19 +125,13 @@ open Examples/Examples.xcodeproj
 |SRTHaishinKit|13.0+|13.0+|10.15+|1.0+|-|
 
 ### Cocoa Keys
-Please contains Info.plist.
-
-**iOS 10.0+**
-* NSMicrophoneUsageDescription
-* NSCameraUsageDescription
-
-**macOS 10.14+**
-* NSMicrophoneUsageDescription
-* NSCameraUsageDescription
-
-**tvOS 17.0+**
-* NSMicrophoneUsageDescription
-* NSCameraUsageDescription
+Please make sure to contains `Info.plist` the following values when accessing the camera or microphone.
+```xml
+<key>NSCameraUsageDescription</key>
+<string>your usage description here</string>
+<key>NSMicrophoneUsageDescription</key>
+<string>your usage description here</string>
+```
 
 ## 🔧 Installation
 * Using Swift Package Manager

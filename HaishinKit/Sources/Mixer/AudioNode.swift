@@ -135,7 +135,16 @@ final class MixerNode: AudioNode {
         componentFlagsMask: 0)
 
     init(format: AVAudioFormat) throws {
-        try super.init(description: &mixerComponentDescription)
+        var mixerDefaultDesc = AudioComponentDescription(
+            componentType: kAudioUnitType_Mixer,
+            componentSubType: kAudioUnitSubType_MultiChannelMixer,
+            componentManufacturer: kAudioUnitManufacturer_Apple,
+            componentFlags: 0,
+            componentFlagsMask: 0)
+        
+        try super.init(description: &mixerDefaultDesc)
+        
+        self.mixerComponentDescription = mixerDefaultDesc
     }
 
     func update(inputCallback: inout AURenderCallbackStruct, bus: UInt8) throws {
@@ -231,7 +240,17 @@ final class OutputNode: AudioNode {
             throw Error.unableToAllocateBuffer
         }
         self.buffer = buffer
-        try super.init(description: &outputComponentDescription)
+        
+        var outputDefaultDesc = AudioComponentDescription(
+            componentType: kAudioUnitType_Output,
+            componentSubType: kAudioUnitSubType_GenericOutput,
+            componentManufacturer: kAudioUnitManufacturer_Apple,
+            componentFlags: 0,
+            componentFlagsMask: 0)
+        
+        try super.init(description: &outputDefaultDesc)
+        
+        self.outputComponentDescription = outputDefaultDesc
     }
 
     func render(numberOfFrames: AVAudioFrameCount,

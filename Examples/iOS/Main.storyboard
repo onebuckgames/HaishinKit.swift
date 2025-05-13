@@ -206,7 +206,7 @@
                         <outlet property="audioBitrateLabel" destination="gR3-9k-qhK" id="KH8-U9-YKe"/>
                         <outlet property="audioBitrateSlider" destination="aKS-oc-LrT" id="b72-LB-0BW"/>
                         <outlet property="audioDevicePicker" destination="WXJ-5I-M9V" id="HHa-EB-KzD"/>
-                        <outlet property="audioMonoStereoSegmentCOntrol" destination="uPl-6C-KBI" id="Vea-Tb-VgH"/>
+                        <outlet property="audioMonoStereoSegmentControl" destination="uPl-6C-KBI" id="Vea-Tb-VgH"/>
                         <outlet property="currentFPSLabel" destination="YMl-Xb-JZb" id="k4n-rH-YcZ"/>
                         <outlet property="effectSegmentControl" destination="2Sy-na-foy" id="25f-W4-fWk"/>
                         <outlet property="fpsControl" destination="fbC-rC-wNg" id="t4h-VS-Pmd"/>
