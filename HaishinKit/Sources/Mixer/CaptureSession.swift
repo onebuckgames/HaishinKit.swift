@@ -79,6 +79,9 @@ final class CaptureSession {
         didSet {
             oldValue?.finish()
         }
+    @available(tvOS 17.0, iOS 16.0, *)
+    var isMultitaskingCameraAccessEnabled: Bool {
+        return session.isMultitaskingCameraAccessEnabled
     }
 
     private var runtimeErrorContinutation: AsyncStream<AVError>.Continuation? {
@@ -254,6 +257,35 @@ extension CaptureSession: CaptureSessionConvertible {
         session.startRunning()
         isRunning = session.isRunning
     }
+
+    #if os(iOS) || os(tvOS)
+    @available(tvOS 17.0, iOS 16.0, *)
+    private func makeSession() -> AVCaptureSession {
+        let session: AVCaptureSession
+        if isMultiCamSessionEnabled {
+            session = AVCaptureMultiCamSession()
+        } else {
+            session = AVCaptureSession()
+        }
+        if session.canSetSessionPreset(sessionPreset) {
+            session.sessionPreset = sessionPreset
+        }
+        if #available(iOS 16.0, *) {
+            if session.isMultitaskingCameraAccessSupported {
+                session.isMultitaskingCameraAccessEnabled = true
+            }
+        }        
+        return session
+    }
+    #elseif os(macOS)
+    private func makeSession() -> AVCaptureSession {
+        let session = AVCaptureSession()
+        if session.canSetSessionPreset(sessionPreset) {
+            session.sessionPreset = sessionPreset
+        }
+        return session
+    }
+    #endif
 
     @available(tvOS 17.0, *)
     private func addSessionObservers(_ session: AVCaptureSession) {
