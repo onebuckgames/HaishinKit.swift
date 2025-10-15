@@ -1,7 +1,7 @@
 import Foundation
 
 /// An objec thatt provides the RTMPConnection, SRTConnection's monitoring events.
-public final actor NetworkMonitor {
+package final actor NetworkMonitor {
     /// The error domain codes.
     public enum Error: Swift.Error {
         /// An invalid internal stare.
@@ -35,7 +35,7 @@ public final actor NetworkMonitor {
     private weak var reporter: (any NetworkTransportReporter)?
 
     /// Creates a new instance.
-    public init(_ reporter: some NetworkTransportReporter) {
+    package init(_ reporter: some NetworkTransportReporter) {
         self.reporter = reporter
     }
 
@@ -78,7 +78,7 @@ public final actor NetworkMonitor {
 
 extension NetworkMonitor: AsyncRunner {
     // MARK: AsyncRunner
-    public func startRunning() {
+    package func startRunning() {
         guard !isRunning else {
             return
         }
@@ -98,7 +98,7 @@ extension NetworkMonitor: AsyncRunner {
         }
     }
 
-    public func stopRunning() {
+    package func stopRunning() {
         guard isRunning else {
             return
         }

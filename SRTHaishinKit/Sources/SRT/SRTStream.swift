@@ -6,16 +6,25 @@ import libsrt
 
 /// An actor that provides the interface to control a one-way channel over a SRTConnection.
 public actor SRTStream {
-    @Published public private(set) var readyState: HKStreamReadyState = .idle
+    static let supportedAudioCodecs: [AudioCodecSettings.Format] = [.aac]
+    static let supportedVideoCodecs: [VideoCodecSettings.Format] = VideoCodecSettings.Format.allCases
+
+    @Published public private(set) var readyState: StreamReadyState = .idle
     public private(set) var videoTrackId: UInt8? = UInt8.max
     public private(set) var audioTrackId: UInt8? = UInt8.max
-    private var outputs: [any HKStreamOutput] = []
-    private var bitrateStorategy: (any HKStreamBitRateStrategy)?
+    package var outputs: [any StreamOutput] = []
+    package var bitRateStrategy: (any StreamBitRateStrategy)?
     private lazy var writer = TSWriter()
     private lazy var reader = TSReader()
-    private lazy var incoming = HKIncomingStream(self)
-    private lazy var outgoing = HKOutgoingStream()
+    package lazy var incoming = IncomingStream(self)
+    package lazy var outgoing = OutgoingStream()
     private weak var connection: SRTConnection?
+
+    /// The error domain codes.
+    public enum Error: Swift.Error {
+        // An unsupported codec.
+        case unsupportedCodec
+    }
 
     /// Creates a new stream object.
     public init(connection: SRTConnection) {
@@ -116,40 +125,19 @@ public actor SRTStream {
     }
 }
 
-extension SRTStream: HKStream {
-    // MARK: HKStream
-    public var soundTransform: SoundTransform? {
-        get async {
-            await incoming.soundTransfrom
+extension SRTStream: _Stream {
+    public func setAudioSettings(_ audioSettings: AudioCodecSettings) throws {
+        guard Self.supportedAudioCodecs.contains(audioSettings.format) else {
+            throw Error.unsupportedCodec
         }
-    }
-
-    public func setSoundTransform(_ soundTransform: SoundTransform) async {
-        await incoming.setSoundTransform(soundTransform)
-    }
-
-    public var audioSettings: AudioCodecSettings {
-        outgoing.audioSettings
-    }
-
-    public var videoSettings: VideoCodecSettings {
-        outgoing.videoSettings
-    }
-
-    public func setAudioSettings(_ audioSettings: AudioCodecSettings) {
         outgoing.audioSettings = audioSettings
     }
 
-    public func setVideoSettings(_ videoSettings: VideoCodecSettings) {
+    public func setVideoSettings(_ videoSettings: VideoCodecSettings) throws {
+        guard Self.supportedVideoCodecs.contains(videoSettings.format) else {
+            throw Error.unsupportedCodec
+        }
         outgoing.videoSettings = videoSettings
-    }
-
-    public func setBitrateStorategy(_ bitrateStorategy: (some HKStreamBitRateStrategy)?) {
-        self.bitrateStorategy = bitrateStorategy
-    }
-
-    public func setVideoInputBufferCounts(_ videoInputBufferCounts: Int) {
-        outgoing.videoInputBufferCounts = videoInputBufferCounts
     }
 
     public func append(_ sampleBuffer: CMSampleBuffer) {
@@ -180,25 +168,8 @@ extension SRTStream: HKStream {
         }
     }
 
-    public func attachAudioPlayer(_ audioPlayer: AudioPlayer?) async {
-        await incoming.attachAudioPlayer(audioPlayer)
-    }
-
-    public func addOutput(_ observer: some HKStreamOutput) {
-        guard !outputs.contains(where: { $0 === observer }) else {
-            return
-        }
-        outputs.append(observer)
-    }
-
-    public func removeOutput(_ observer: some HKStreamOutput) {
-        if let index = outputs.firstIndex(where: { $0 === observer }) {
-            outputs.remove(at: index)
-        }
-    }
-
     public func dispatch(_ event: NetworkMonitorEvent) async {
-        await bitrateStorategy?.adjustBitrate(event, stream: self)
+        await bitRateStrategy?.adjustBitrate(event, stream: self)
     }
 }
 

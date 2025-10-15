@@ -1,15 +1,14 @@
 import CoreMedia
 import Foundation
 
-protocol NALUnit {
-    init(_ data: Data)
-}
+final package class NALUnitReader {
+    static package let defaultNALUnitHeaderLength: Int32 = 4
+    package var nalUnitHeaderLength: Int32 = NALUnitReader.defaultNALUnitHeaderLength
 
-final class NALUnitReader {
-    static let defaultNALUnitHeaderLength: Int32 = 4
-    var nalUnitHeaderLength: Int32 = NALUnitReader.defaultNALUnitHeaderLength
+    package init() {
+    }
 
-    func read<T: NALUnit>(_ data: inout Data, type: T.Type) -> [T] {
+    package func read<T: NALUnit>(_ data: inout Data, type: T.Type) -> [T] {
         var units: [T] = .init()
         var lastIndexOf = data.count - 1
         for i in (2..<data.count).reversed() {
@@ -23,16 +22,41 @@ final class NALUnitReader {
         return units
     }
 
-    func makeFormatDescription(_ data: inout Data, type: ESStreamType) -> CMFormatDescription? {
-        switch type {
-        case .h264:
-            let units = read(&data, type: AVCNALUnit.self)
-            return units.makeFormatDescription(nalUnitHeaderLength)
-        case .h265:
-            let units = read(&data, type: HEVCNALUnit.self)
-            return units.makeFormatDescription(nalUnitHeaderLength)
-        default:
-            return nil
+    package func read(_ buffer: CMSampleBuffer) -> [Data] {
+        var offset = 0
+        let header = Int(Self.defaultNALUnitHeaderLength)
+        let length = buffer.dataBuffer?.dataLength ?? 0
+        var result: [Data] = []
+
+        if !buffer.isNotSync {
+            if let formatDescription = buffer.formatDescription {
+                result.append(Data([0x09, 0x10]))
+                formatDescription.parameterSets.forEach {
+                    result.append($0)
+                }
+            }
+        } else {
+            result.append(Data([0x09, 0x30]))
         }
+
+        try? buffer.dataBuffer?.withUnsafeMutableBytes { buffer in
+            guard let baseAddress = buffer.baseAddress else {
+                return
+            }
+            while offset + header < length {
+                var nalUnitLength: UInt32 = 0
+                memcpy(&nalUnitLength, baseAddress + offset, header)
+                nalUnitLength = CFSwapInt32BigToHost(nalUnitLength)
+                let start = offset + header
+                let end = start + Int(nalUnitLength)
+                if end <= length {
+                    result.append(Data(bytes: baseAddress + start, count: Int(nalUnitLength)))
+                } else {
+                    break
+                }
+                offset = end
+            }
+        }
+        return result
     }
 }

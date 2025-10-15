@@ -2,7 +2,7 @@ import Accelerate
 import AVFoundation
 import CoreMedia
 
-extension CMSampleBuffer {
+package extension CMSampleBuffer {
     @inlinable @inline(__always) var isNotSync: Bool {
         get {
             guard !sampleAttachments.isEmpty else {

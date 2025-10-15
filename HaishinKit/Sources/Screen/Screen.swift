@@ -63,11 +63,18 @@ public final class Screen: ScreenObjectContainerConvertible {
         }
     }
     #endif
-
-    var videoCaptureLatency: TimeInterval = 0.0
+    var synchronizationClock: CMClock? {
+        get {
+            return renderer.synchronizationClock
+        }
+        set {
+            renderer.synchronizationClock = newValue
+        }
+    }
     private(set) var renderer = ScreenRendererByCPU()
     private(set) var targetTimestamp: TimeInterval = 0.0
     private(set) var videoTrackScreenObject = VideoTrackScreenObject()
+    private var videoCaptureLatency: TimeInterval = 0.0
     private var root: ScreenObjectContainer = .init()
     private var attributes: [NSString: NSObject] {
         return [
@@ -137,7 +144,7 @@ public final class Screen: ScreenObjectContainerConvertible {
         guard let outputFormat else {
             return nil
         }
-        if let dictionary = CVBufferGetAttachments(pixelBuffer, .shouldNotPropagate) {
+        if let dictionary = CVBufferCopyAttachments(pixelBuffer, .shouldNotPropagate) {
             CVBufferSetAttachments(pixelBuffer, dictionary, .shouldPropagate)
         }
         let presentationTimeStamp = CMTime(seconds: updateFrame.timestamp - videoCaptureLatency, preferredTimescale: Self.preferredTimescale)
@@ -181,5 +188,14 @@ public final class Screen: ScreenObjectContainerConvertible {
         root.layout(renderer)
         root.draw(renderer)
         return sampleBuffer
+    }
+
+    func setVideoCaptureLatency(_ presentationTimeStamp: CMTime) {
+        guard 0 < targetTimestamp else {
+            return
+        }
+        let hostPresentationTimeStamp = presentationTimeStamp.convertTime(from: synchronizationClock)
+        let diff = ceil((targetTimestamp - hostPresentationTimeStamp.seconds) * 10000) / 10000
+        videoCaptureLatency = diff
     }
 }

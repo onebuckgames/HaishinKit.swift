@@ -6,7 +6,7 @@ import Testing
 
 @ScreenActor
 @Suite struct VideoTrackObjectContainerTests {
-    @Test func testHorizontalAlignmentBounds() {
+    @Test func horizontalAlignmentBounds() {
         let screen = Screen()
 
         let object1 = VideoTrackScreenObject()

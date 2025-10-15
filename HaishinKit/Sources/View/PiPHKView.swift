@@ -124,12 +124,12 @@ extension PiPHKView: MediaMixerOutput {
     }
 }
 
-extension PiPHKView: HKStreamOutput {
+extension PiPHKView: StreamOutput {
     // MARK: HKStreamOutput
-    nonisolated public func stream(_ stream: some HKStream, didOutput audio: AVAudioBuffer, when: AVAudioTime) {
+    nonisolated public func stream(_ stream: some StreamConvertible, didOutput audio: AVAudioBuffer, when: AVAudioTime) {
     }
 
-    nonisolated public func stream(_ stream: some HKStream, didOutput video: CMSampleBuffer) {
+    nonisolated public func stream(_ stream: some StreamConvertible, didOutput video: CMSampleBuffer) {
         Task { @MainActor in
             #if os(macOS)
             (layer as? AVSampleBufferDisplayLayer)?.enqueue(video)

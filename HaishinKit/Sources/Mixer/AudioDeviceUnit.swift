@@ -32,7 +32,7 @@ public final class AudioDeviceUnit: DeviceUnit {
         self.track = track
     }
 
-    func attachDevice(_ device: AVCaptureDevice?, session: CaptureSession, audioUnit: AudioCaptureUnit) throws {
+    func attachDevice(_ device: AVCaptureDevice?, session: (some CaptureSessionConvertible), audioUnit: AudioCaptureUnit) throws {
         setSampleBufferDelegate(nil)
         session.detachCapture(self)
         guard let device else {

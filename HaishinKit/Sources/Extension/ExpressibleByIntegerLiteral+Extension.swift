@@ -1,6 +1,6 @@
 import Foundation
 
-extension ExpressibleByIntegerLiteral {
+package extension ExpressibleByIntegerLiteral {
     var data: Data {
         return withUnsafePointer(to: self) { value in
             return Data(bytes: UnsafeRawPointer(value), count: MemoryLayout<Self>.size)

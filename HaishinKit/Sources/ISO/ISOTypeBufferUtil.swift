@@ -1,24 +1,24 @@
 import Foundation
 
-struct ISOTypeBufferUtil {
-    let data: Data
+package struct ISOTypeBufferUtil {
+    package let data: Data
 
-    init(data: Data) {
+    package init(data: Data) {
         self.data = data
     }
 
-    init?(bytes: UnsafePointer<UInt8>, count: UInt32) {
+    package init?(bytes: UnsafePointer<UInt8>, count: UInt32) {
         self.init(data: Data(bytes: bytes, count: Int(count)))
     }
 
-    init?(data: Data?) {
+    package init?(data: Data?) {
         guard let data = data else {
             return nil
         }
         self.init(data: data)
     }
 
-    func toByteStream() -> Data {
+    package func toByteStream() -> Data {
         let buffer = ByteArray(data: data)
         var result = Data()
         while 0 < buffer.bytesAvailable {
@@ -33,7 +33,7 @@ struct ISOTypeBufferUtil {
         return result
     }
 
-    static func toNALFileFormat(_ data: inout Data) {
+    static package func toNALFileFormat(_ data: inout Data) {
         var lastIndexOf = data.count - 1
         for i in (2..<data.count).reversed() {
             guard data[i] == 1 && data[i - 1] == 0 && data[i - 2] == 0 else {

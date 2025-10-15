@@ -67,6 +67,15 @@ final class AudioMixerByMultiTrack: AudioMixer {
         return status
     }
 
+    deinit {
+        if let mixerNode = mixerNode {
+            AudioOutputUnitStop(mixerNode.audioUnit)
+        }
+        if let outputNode = outputNode {
+            AudioOutputUnitStop(outputNode.audioUnit)
+        }
+    }
+
     func append(_ track: UInt8, buffer: CMSampleBuffer) {
         if settings.mainTrack == track {
             inSourceFormat = buffer.formatDescription
@@ -91,6 +100,12 @@ final class AudioMixerByMultiTrack: AudioMixer {
     }
 
     private func setupAudioNodes() throws {
+        if let mixerNode {
+            AudioOutputUnitStop(mixerNode.audioUnit)
+        }
+        if let outputNode {
+            AudioOutputUnitStop(outputNode.audioUnit)
+        }
         mixerNode = nil
         outputNode = nil
         guard let outputFormat else {

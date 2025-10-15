@@ -19,17 +19,6 @@ final class VideoCaptureUnit: CaptureUnit {
     var inputFormats: [UInt8: CMFormatDescription] {
         return videoMixer.inputFormats
     }
-    var frameRate = MediaMixer.defaultFrameRate {
-        didSet {
-            guard #available(tvOS 17.0, *) else {
-                return
-            }
-            for capture in devices.values {
-                capture.setFrameRate(frameRate)
-            }
-        }
-    }
-
     #if os(iOS) || os(tvOS) || os(macOS)
     var isTorchEnabled = false {
         didSet {
@@ -92,9 +81,9 @@ final class VideoCaptureUnit: CaptureUnit {
     var devices: [UInt8: VideoDeviceUnit] = [:]
     #endif
 
-    private let session: CaptureSession
+    private let session: (any CaptureSessionConvertible)
 
-    init(_ session: CaptureSession) {
+    init(_ session: (some CaptureSessionConvertible)) {
         self.session = session
     }
 

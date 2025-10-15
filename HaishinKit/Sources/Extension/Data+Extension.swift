@@ -1,7 +1,7 @@
 import CoreMedia
 import Foundation
 
-extension Data {
+package extension Data {
     var bytes: [UInt8] {
         withUnsafeBytes {
             guard let pointer = $0.baseAddress?.assumingMemoryBound(to: UInt8.self) else {

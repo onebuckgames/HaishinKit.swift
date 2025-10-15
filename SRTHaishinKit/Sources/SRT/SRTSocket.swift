@@ -8,7 +8,8 @@ final actor SRTSocket {
 
     enum Error: Swift.Error {
         case notConnected
-        case illegalState(message: String)
+        case rejected(_ reason: SRTRejectReason)
+        case illegalState(_ message: String)
     }
 
     enum Status: Int, CustomDebugStringConvertible {
@@ -65,6 +66,7 @@ final actor SRTSocket {
                     if 0 <= result {
                         continuation.yield(await self.incomingBuffer.subdata(in: 0..<Data.Index(result)))
                     } else {
+                        await self.stopRunning()
                         continuation.finish()
                     }
                 }
@@ -151,7 +153,8 @@ final actor SRTSocket {
             }
         }()
         guard status != SRT_ERROR else {
-            throw makeSocketError()
+            let reason = SRTRejectReason(socket: socket) ?? .unknown
+            throw Error.rejected(reason)
         }
         switch url.mode {
         case .listener:
@@ -217,7 +220,7 @@ final actor SRTSocket {
         return srt_bstats(socket, &perf, 1)
     }
 
-    private func makeSocketError() -> SRTError {
+    private func makeSocketError() -> Error {
         let error_message = String(cString: srt_getlasterror_str())
         defer {
             logger.error(error_message)
@@ -226,7 +229,7 @@ final actor SRTSocket {
             srt_close(socket)
             socket = SRT_INVALID_SOCK
         }
-        return .illegalState(message: error_message)
+        return .illegalState(error_message)
     }
 
     @inline(__always)

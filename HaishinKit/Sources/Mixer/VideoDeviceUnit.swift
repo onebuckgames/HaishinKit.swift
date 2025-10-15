@@ -8,14 +8,23 @@ public typealias VideoDeviceConfigurationBlock = @Sendable (VideoDeviceUnit) thr
 /// An object that provides the interface to control the AVCaptureDevice's transport behavior.
 @available(tvOS 17.0, *)
 public final class VideoDeviceUnit: DeviceUnit {
+    /// The error domain codes.
+    public enum Error: Swift.Error {
+        /// The frameRate isn’t supported.
+        case unsupportedFrameRate
+    }
+
     /// The output type that this capture video data output..
     public typealias Output = AVCaptureVideoDataOutput
 
     /// The default color format.
     public static let colorFormat = kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange
 
-    /// The current video device object.
+    /// The device object.
     public private(set) var device: AVCaptureDevice?
+
+    /// The frame rate for capturing video frame.
+    public private(set) var frameRate = MediaMixer.defaultFrameRate
 
     /// Specifies the video capture color format.
     public var colorFormat = VideoDeviceUnit.colorFormat
@@ -83,7 +92,36 @@ public final class VideoDeviceUnit: DeviceUnit {
         self.track = track
     }
 
-    func attachDevice(_ device: AVCaptureDevice?, session: CaptureSession, videoUnit: VideoCaptureUnit) throws {
+    /// Sets the frame rate of a device capture.
+    public func setFrameRate(_ frameRate: Float64) throws {
+        guard let device else {
+            return
+        }
+        try device.lockForConfiguration()
+        defer {
+            device.unlockForConfiguration()
+        }
+        if device.activeFormat.isFrameRateSupported(frameRate) {
+            device.activeVideoMinFrameDuration = CMTime(value: 100, timescale: CMTimeScale(100 * frameRate))
+            device.activeVideoMaxFrameDuration = CMTime(value: 100, timescale: CMTimeScale(100 * frameRate))
+        } else {
+            if let format = device.videoFormat(
+                width: device.activeFormat.formatDescription.dimensions.width,
+                height: device.activeFormat.formatDescription.dimensions.height,
+                frameRate: frameRate,
+                isMultiCamSupported: device.activeFormat.isMultiCamSupported
+            ) {
+                device.activeFormat = format
+                device.activeVideoMinFrameDuration = CMTime(value: 100, timescale: CMTimeScale(100 * frameRate))
+                device.activeVideoMaxFrameDuration = CMTime(value: 100, timescale: CMTimeScale(100 * frameRate))
+            } else {
+                throw Error.unsupportedFrameRate
+            }
+        }
+        self.frameRate = frameRate
+    }
+
+    func attachDevice(_ device: AVCaptureDevice?, session: some CaptureSessionConvertible, videoUnit: VideoCaptureUnit) throws {
         setSampleBufferDelegate(nil)
         session.detachCapture(self)
         guard let device else {
@@ -130,33 +168,6 @@ public final class VideoDeviceUnit: DeviceUnit {
         setSampleBufferDelegate(videoUnit)
     }
 
-    func setFrameRate(_ frameRate: Float64) {
-        guard let device else {
-            return
-        }
-        do {
-            try device.lockForConfiguration()
-            if device.activeFormat.isFrameRateSupported(frameRate) {
-                device.activeVideoMinFrameDuration = CMTime(value: 100, timescale: CMTimeScale(100 * frameRate))
-                device.activeVideoMaxFrameDuration = CMTime(value: 100, timescale: CMTimeScale(100 * frameRate))
-            } else {
-                if let format = device.videoFormat(
-                    width: device.activeFormat.formatDescription.dimensions.width,
-                    height: device.activeFormat.formatDescription.dimensions.height,
-                    frameRate: frameRate,
-                    isMultiCamSupported: device.activeFormat.isMultiCamSupported
-                ) {
-                    device.activeFormat = format
-                    device.activeVideoMinFrameDuration = CMTime(value: 100, timescale: CMTimeScale(100 * frameRate))
-                    device.activeVideoMaxFrameDuration = CMTime(value: 100, timescale: CMTimeScale(100 * frameRate))
-                }
-            }
-            device.unlockForConfiguration()
-        } catch {
-            logger.error("while locking device for fps:", error)
-        }
-    }
-
     #if os(iOS) || os(tvOS) || os(macOS)
     func setTorchMode(_ torchMode: AVCaptureDevice.TorchMode) {
         guard let device, device.isTorchModeSupported(torchMode) else {
@@ -164,8 +175,10 @@ public final class VideoDeviceUnit: DeviceUnit {
         }
         do {
             try device.lockForConfiguration()
+            defer {
+                device.unlockForConfiguration()
+            }
             device.torchMode = torchMode
-            device.unlockForConfiguration()
         } catch {
             logger.error("while setting torch:", error)
         }
@@ -177,7 +190,6 @@ public final class VideoDeviceUnit: DeviceUnit {
             #if os(iOS) || os(macOS)
             videoOrientation = videoUnit.videoOrientation
             #endif
-            setFrameRate(videoUnit.frameRate)
         }
         dataOutput = videoUnit?.makeDataOutput(track)
         output?.setSampleBufferDelegate(dataOutput, queue: videoUnit?.lockQueue)

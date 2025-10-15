@@ -24,7 +24,7 @@ final class ViewController: UIViewController {
         }
     }
     private var mixer = MediaMixer()
-    private let netStreamSwitcher: HKStreamSwitcher = .init()
+    private var session: (any Session)?
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
@@ -32,12 +32,17 @@ final class ViewController: UIViewController {
             var videoMixerSettings = await mixer.videoMixerSettings
             videoMixerSettings.mode = .offscreen
             await mixer.setVideoMixerSettings(videoMixerSettings)
-            await netStreamSwitcher.setPreference(Preference.default)
-            if let stream = await netStreamSwitcher.stream {
-                await mixer.addOutput(stream)
-                if let view = view as? (any HKStreamOutput) {
-                    await stream.addOutput(view)
+            do {
+                session = try await SessionBuilderFactory.shared.make(Preference.default.makeURL()).setMode(.playback).build()
+                guard let session else {
+                    return
                 }
+                await mixer.addOutput(session.stream)
+                if let view = view as? (any StreamOutput) {
+                    await session.stream.addOutput(view)
+                }
+            } catch {
+                logger.error(error)
             }
         }
     }
@@ -61,7 +66,8 @@ final class ViewController: UIViewController {
             present(picker, animated: true)
         case .playback:
             Task {
-                await netStreamSwitcher.open(.playback)
+                try? await session?.connect {
+                }
             }
         }
     }

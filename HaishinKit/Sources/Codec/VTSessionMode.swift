@@ -14,7 +14,7 @@ enum VTSessionMode {
                 width: Int32(videoCodec.settings.videoSize.width),
                 height: Int32(videoCodec.settings.videoSize.height),
                 codecType: videoCodec.settings.format.codecType,
-                encoderSpecification: nil,
+                encoderSpecification: videoCodec.settings.makeEncoderSpecification(),
                 imageBufferAttributes: videoCodec.makeImageBufferAttributes(.compression) as CFDictionary?,
                 compressedDataAllocator: nil,
                 outputCallback: nil,

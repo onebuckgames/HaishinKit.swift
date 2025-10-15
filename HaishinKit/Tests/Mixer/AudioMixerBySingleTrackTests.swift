@@ -89,7 +89,7 @@ import Testing
         #expect(result.outputs.count == 2)
     }
 
-    @Test func pPassthrough16000_48000() {
+    @Test func passthrough16000_48000() {
         let mixer = AudioMixerBySingleTrack()
         mixer.settings = .init(
             sampleRate: 0, channels: 1

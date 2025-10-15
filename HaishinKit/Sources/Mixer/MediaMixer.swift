@@ -17,9 +17,37 @@ public final actor MediaMixer {
         case deviceNotFound
     }
 
+    /// An enumeration defines the capture session mode used for video/audio input.
+    public enum CaptureSessionMode: Sendable {
+        /// Uses a standard `AVCaptureSession`
+        case single
+        /// Uses an `AVCaptureMultiCamSession`
+        case multi
+        /// Does not use a `AVCaptureSession`. Set this when using ReplayKit, as AVCaptureSession is not required.
+        case manual
+
+        func makeSession() -> (any CaptureSessionConvertible) {
+            switch self {
+            case .single:
+                let session = CaptureSession()
+                session.isMultiCamSessionEnabled = false
+                return session
+            case .multi:
+                let session = CaptureSession()
+                session.isMultiCamSessionEnabled = true
+                return session
+            case .manual:
+                return NullCaptureSession()
+            }
+        }
+    }
+
     /// The offscreen rendering object.
     @ScreenActor
     public private(set) lazy var screen = Screen()
+
+    /// The capture session mode.
+    public let captureSessionMode: CaptureSessionMode
 
     #if os(iOS) || os(tvOS)
     /// The AVCaptureMultiCamSession enabled.
@@ -72,10 +100,8 @@ public final actor MediaMixer {
         videoIO.inputFormats
     }
 
-    /// The frame rate of a device capture.
-    public var frameRate: Float64 {
-        videoIO.frameRate
-    }
+    /// The output frame rate.
+    public private(set) var frameRate = MediaMixer.defaultFrameRate
 
     /// The capture session is in a running state or not.
     @available(tvOS 17.0, *)
@@ -99,87 +125,48 @@ public final actor MediaMixer {
     private var outputs: [any MediaMixerOutput] = []
     @MainActor
     private var cancellables: Set<AnyCancellable> = []
-    private let useManualCapture: Bool
     private lazy var audioIO = AudioCaptureUnit(session)
     private lazy var videoIO = VideoCaptureUnit(session)
-    private lazy var session = CaptureSession()
+    private lazy var session: (any CaptureSessionConvertible) = captureSessionMode.makeSession()
     @ScreenActor
     private lazy var displayLink = DisplayLinkChoreographer()
 
-    #if os(iOS) || os(tvOS)
     /// Creates a new instance.
     ///
     /// - Parameters:
-    ///   - multiCamSessionEnabled: Specifies the AVCaptureMultiCamSession enabled.
+    ///   - captureSessionMode: Specifies the capture session mode.
     ///   - multiTrackAudioMixingEnabled: Specifies the feature to mix multiple audio tracks. For example, it is possible to mix .appAudio and .micAudio from ReplayKit.
-    ///   - useManualCapture: Specifies whether to start capturing manually. #1642
     public init(
-        multiCamSessionEnabled: Bool = true,
-        multiTrackAudioMixingEnabled: Bool = false,
-        useManualCapture: Bool = false
+        captureSessionMode: CaptureSessionMode = .single,
+        multiTrackAudioMixingEnabled: Bool = false
     ) {
-        self.useManualCapture = useManualCapture
+        self.captureSessionMode = captureSessionMode
         Task {
-            await _init(
-                multiCamSessionEnabled: multiCamSessionEnabled,
-                multiTrackAudioMixingEnabled: multiTrackAudioMixingEnabled,
-                useManualCapture: useManualCapture
-            )
+            await _init(multiTrackAudioMixingEnabled: multiTrackAudioMixingEnabled)
         }
     }
 
     private func _init(
-        multiCamSessionEnabled: Bool,
-        multiTrackAudioMixingEnabled: Bool,
-        useManualCapture: Bool
-    ) async {
-        session.isMultiCamSessionEnabled = multiCamSessionEnabled
-        audioIO.isMultiTrackAudioMixingEnabled = multiTrackAudioMixingEnabled
-        if !useManualCapture {
-            startRunning()
-        }
-    }
-
-    #else
-    /// Creates a new instance.
-    ///
-    /// - Parameters:
-    ///   - multiTrackAudioMixingEnabled: Specifies the feature to mix multiple audio tracks. For example, it is possible to mix .appAudio and .micAudio from ReplayKit.
-    ///   - useManualCapture: Specifies whether to start capturing manually. #1642
-    public init(
-        multiTrackAudioMixingEnabled: Bool = false,
-        useManualCapture: Bool = false
-    ) {
-        self.useManualCapture = useManualCapture
-        Task {
-            await _init(
-                multiTrackAudioMixingEnabled: multiTrackAudioMixingEnabled,
-                useManualCapture: useManualCapture
-            )
-        }
-    }
-
-    private func _init(
-        multiTrackAudioMixingEnabled: Bool,
-        useManualCapture: Bool
+        multiTrackAudioMixingEnabled: Bool
     ) async {
         audioIO.isMultiTrackAudioMixingEnabled = multiTrackAudioMixingEnabled
-        if !useManualCapture {
-            startRunning()
-        }
     }
-    #endif
 
     /// Attaches a video device.
     ///
     /// If you want to use the multi-camera feature, please make create a MediaMixer with a multiCamSession mode for iOS.
-    /// let mixer = MediaMixer(multiCamSessionEnabled: true, multiTrackAudioMixingEnabled: false)
-    ///
+    /// ```swift
+    /// let mixer = MediaMixer(captureSessionMode: .multi)
+    /// ```
     @available(tvOS 17.0, *)
     public func attachVideo(_ device: AVCaptureDevice?, track: UInt8 = 0, configuration: VideoDeviceConfigurationBlock? = nil) async throws {
+        let frameRate = self.frameRate
         return try await withCheckedThrowingContinuation { continuation in
             do {
-                try videoIO.attachVideo(track, device: device, configuration: configuration)
+                try videoIO.attachVideo(track, device: device) { video in
+                    try? video.setFrameRate(frameRate)
+                    try configuration?(video)
+                }
                 continuation.resume()
             } catch {
                 continuation.resume(throwing: Error.failedToAttach(error))
@@ -201,8 +188,8 @@ public final actor MediaMixer {
     ///
     /// - Attention: You can perform multi-microphone capture by specifying as follows on macOS. Unfortunately, it seems that only one microphone is available on iOS.
     ///
-    /// ```
-    /// let mixer = MediaMixer(multiCamSessionEnabled: false, multiTrackAudioMixingEnabled: true)
+    /// ```swift
+    /// let mixer = MediaMixer(multiTrackAudioMixingEnabled: true)
     ///
     /// var audios = AVCaptureDevice.devices(for: .audio)
     /// if let device = audios.removeFirst() {
@@ -283,11 +270,24 @@ public final actor MediaMixer {
         }
     }
 
-    /// Sets the frame rate of a device capture.
-    public func setFrameRate(_ frameRate: Float64) {
-        videoIO.frameRate = frameRate
-        Task { @ScreenActor in
-            displayLink.preferredFramesPerSecond = Int(frameRate)
+    /// Sets the output frame rate of the mixer.
+    ///
+    /// This is distinct from the camera capture rate, which can be configured separately as shown below.
+    /// ```swift
+    /// try? await mixer.configuration(video: 0) { video in
+    ///     try? video.setFrameRate(fps)
+    /// }
+    /// ```
+    public func setFrameRate(_ frameRate: Float64) throws {
+        switch videoMixerSettings.mode {
+        case .passthrough:
+            if #available(tvOS 17.0, *) {
+                try videoIO.devices.first?.value.setFrameRate(frameRate)
+            }
+        case .offscreen:
+            Task { @ScreenActor in
+                displayLink.preferredFramesPerSecond = Int(frameRate)
+            }
         }
     }
 
@@ -306,13 +306,31 @@ public final actor MediaMixer {
     /// Internally, it is called either when the view is attached or just before publishing. In other cases, please call this method if you want to manually start the capture.
     @available(tvOS 17.0, *)
     public func startCapturing() {
+        guard !session.isRunning else {
+            return
+        }
         session.startRunning()
+        let synchronizationClock = session.synchronizationClock
+        Task { @ScreenActor in
+            screen.synchronizationClock = synchronizationClock
+        }
+        Task {
+            for await runtimeError in session.runtimeError {
+                await sessionRuntimeErrorOccured(runtimeError)
+            }
+        }
     }
 
     /// Stops capturing from input devices.
     @available(tvOS 17.0, *)
     public func stopCapturing() {
+        guard session.isRunning else {
+            return
+        }
         session.stopRunning()
+        Task { @ScreenActor in
+            screen.synchronizationClock = nil
+        }
     }
 
     /// Appends an AVAudioBuffer.
@@ -337,11 +355,6 @@ public final actor MediaMixer {
             return
         }
         outputs.append(output)
-        if #available(tvOS 17.0, *) {
-            if !isCapturing && !useManualCapture {
-                startCapturing()
-            }
-        }
     }
 
     /// Removes an output observer.
@@ -402,7 +415,7 @@ public final actor MediaMixer {
             guard let device = error.device, let format = device.videoFormat(
                 width: session.sessionPreset.width ?? Int32.max,
                 height: session.sessionPreset.height ?? Int32.max,
-                frameRate: videoIO.frameRate,
+                frameRate: frameRate,
                 isMultiCamSupported: session.isMultiCamSessionEnabled
             ), device.activeFormat != format else {
                 return
@@ -410,9 +423,9 @@ public final actor MediaMixer {
             do {
                 try device.lockForConfiguration()
                 device.activeFormat = format
-                if format.isFrameRateSupported(videoIO.frameRate) {
-                    device.activeVideoMinFrameDuration = CMTime(value: 100, timescale: CMTimeScale(100 * videoIO.frameRate))
-                    device.activeVideoMaxFrameDuration = CMTime(value: 100, timescale: CMTimeScale(100 * videoIO.frameRate))
+                if format.isFrameRateSupported(frameRate) {
+                    device.activeVideoMinFrameDuration = CMTime(value: 100, timescale: CMTimeScale(100 * frameRate))
+                    device.activeVideoMaxFrameDuration = CMTime(value: 100, timescale: CMTimeScale(100 * frameRate))
                 }
                 device.unlockForConfiguration()
                 session.startRunningIfNeeded()
@@ -433,14 +446,15 @@ extension MediaMixer: AsyncRunner {
             return
         }
         isRunning = true
+        setVideoRenderingMode(videoMixerSettings.mode)
+        startCapturing()
         Task {
             for await inputs in videoIO.inputs {
                 Task { @ScreenActor in
                     let sampleBuffer = inputs.1
                     screen.append(inputs.0, buffer: sampleBuffer)
-                    if await videoMixerSettings.mainTrack == inputs.0 && 0 < screen.targetTimestamp {
-                        let diff = ceil((screen.targetTimestamp - sampleBuffer.presentationTimeStamp.seconds) * 10000) / 10000
-                        screen.videoCaptureLatency = diff
+                    if await videoMixerSettings.mainTrack == inputs.0 {
+                        screen.setVideoCaptureLatency(sampleBuffer.presentationTimeStamp)
                     }
                 }
                 for output in outputs where await output.videoTrackId == inputs.0 {
@@ -461,17 +475,6 @@ extension MediaMixer: AsyncRunner {
                     output.mixer(self, didOutput: audio.0, when: audio.1)
                 }
             }
-        }
-        if #available(tvOS 17.0, *) {
-            Task {
-                for await runtimeError in session.runtimeError {
-                    await sessionRuntimeErrorOccured(runtimeError)
-                }
-            }
-        }
-        setVideoRenderingMode(videoMixerSettings.mode)
-        if useManualCapture {
-            session.startRunning()
         }
         #if os(iOS) || os(tvOS) || os(visionOS)
         Task { @MainActor in
@@ -500,9 +503,7 @@ extension MediaMixer: AsyncRunner {
             return
         }
         isRunning = false
-        if useManualCapture {
-            session.stopRunning()
-        }
+        stopCapturing()
         audioIO.finish()
         videoIO.finish()
         Task { @MainActor in

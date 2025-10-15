@@ -11,7 +11,6 @@ enum VTSessionError: Swift.Error {
 protocol VTSessionConvertible {
     func setOption(_ option: VTSessionOption) -> OSStatus
     func setOptions(_ options: Set<VTSessionOption>) -> OSStatus
-    func copySupportedPropertyDictionary() -> [AnyHashable: Any]
     func convert(_ sampleBuffer: CMSampleBuffer, continuation: AsyncStream<CMSampleBuffer>.Continuation?) throws
     func invalidate()
 }
@@ -27,16 +26,5 @@ extension VTSessionConvertible where Self: VTSession {
             properties[option.key.CFString] = option.value
         }
         return VTSessionSetProperties(self, propertyDictionary: properties as CFDictionary)
-    }
-
-    func copySupportedPropertyDictionary() -> [AnyHashable: Any] {
-        var support: CFDictionary?
-        guard VTSessionCopySupportedPropertyDictionary(self, supportedPropertyDictionaryOut: &support) == noErr else {
-            return [:]
-        }
-        guard let result = support as? [AnyHashable: Any] else {
-            return [:]
-        }
-        return result
     }
 }

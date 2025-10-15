@@ -1,86 +1,90 @@
 # ``HaishinKit``
-This is the main module. This module supports the RTMP protocol.
+This is the main module.
 
-## Overview
-This is the main module. It provides common functionality for live streaming and supports the RTMP protocol.
+## 🔍 Overview
+Provides camera and microphone mixing functionality required for live streaming.  
+It also offers common processing across each module.
 
-## 📓 RTMP Usage
-### Ingest
+### Module Structure
+| Module | Description |
+|:-|:-|
+| HaishinKit | This module. |
+| RTMPHaishinKit | Provides the RTMP protocol stack. |
+| SRTHaishinKit | Provides the SRT protocol stack. |
+| RTCHaishinKit | Provides the WebRTC WHEP/WHIP protocol stack. Currently in alpha. |
+| MoQTHaishinKit | Provides the MoQT protocol stack. Currently in alpha. |
+
+## 🎨 Features
+The following features are available:
+- Live Mixing
+  - [Video Mixing](doc://HaishinKit/videomixing)  
+    - Treats camera video and still images as a single stream source.  
+  - Audio Mixing  
+    - Combines different microphone audio sources into a single audio stream source.  
+- Session  
+  - Provides a unified API for protocols such as RTMP, SRT, WHEP, and WHIP.  
+
+## 📖 Usage
+### Live Mixing
 ```swift
 let mixer = MediaMixer()
-let connection = RTMPConnection()
-let stream = RTMPStream(connection: connection)
-let hkView = MTHKView(frame: view.bounds)
 
 Task {
   do {
+    // Attaches the microphone device.
     try await mixer.attachAudio(AVCaptureDevice.default(for: .audio))
   } catch {
     print(error)
   }
 
   do {
+    // Attaches the camera device.
     try await mixer.attachVideo(AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back))
   } catch {
     print(error)
   }
 
+  // Associates the stream object with the MediaMixer.
   await mixer.addOutput(stream)
-}
-
-Task { MainActor in
-  await stream.addOutput(hkView)
-  // add ViewController#view
-  view.addSubview(hkView)
-}
-
-Task {
-  do {
-    try await connection.connect("rtmp://localhost/appName/instanceName")
-    try await stream.publish(streamName)
-  } catch RTMPConnection.Error.requestFailed(let response) {
-    print(response)
-  } catch RTMPStream.Error.requestFailed(let response) {
-    print(response)
-  } catch {
-    print(error)
-  }
+  await mixer.startRunning()
 }
 ```
 
-### Playback
+### Session API
+Provides a unified API for implementing clients with RTMP and SRT. Retry handling is also performed internally by the API.
+
+#### Preparation
 ```swift
-let connection = RTMPConnection()
-let stream = RTMPStream(connection: connection)
-let audioPlayer = AudioPlayer(AVAudioEngine())
-
-let hkView = MTHKView(frame: view.bounds)
-
-Task { MainActor in
-  await stream.addOutput(hkView)
-}
+import HaishinKit
+import RTMPHaishinKit
+import SRTHaishinKit
 
 Task {
-  // requires attachAudioPlayer
-  await stream.attachAudioPlayer(audioPlayer)
-
-  do {
-    try await connection.connect("rtmp://localhost/appName/instanceName")
-    try await stream.play(streamName)
-  } catch RTMPConnection.Error.requestFailed(let response) {
-    print(response)
-  } catch RTMPStream.Error.requestFailed(let response) {
-    print(response)
-  } catch {
-    print(error)
-  }
+  await SessionBuilderFactory.shared.register(RTMPSessionFactory())
+  await SessionBuilderFactory.shared.register(SRTSessionFactory())
 }
 ```
 
-### Authentication
-It supports FME-compatible authentication. Some other services may use their own unique authentication methods, so connection may not be possible in those cases.
+#### Make Session
+**RTMP**
+Please provide the RTMP connection URL combined with the streamName.
 ```swift
-var connection = RTMPConnection()
-connection.connect("rtmp://username:password@localhost/appName/instanceName")
+let session = try await SessionBuilderFactory.shared.make(URL(string: "rtmp://hostname/appName/stramName"))
+  .setMode(.publish)
+  .build()
+```
+**SRT**
+```swift
+let session = try await SessionBuilderFactory.shared.make(URL(string: "srt://hostname:448?stream=xxxxx"))
+  .setMode(.playback)
+  .build()
+```
+
+#### Connecting
+Used for publishing or playback.
+```swift
+try session.connect {
+  print("on disconnected")
+}
 ```
 

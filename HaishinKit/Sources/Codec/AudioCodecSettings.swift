@@ -11,7 +11,7 @@ public struct AudioCodecSettings: Codable, Sendable {
     public static let maximumNumberOfChannels: UInt32 = 8
 
     /// The type of the AudioCodec supports format.
-    public enum Format: Codable, Sendable {
+    public enum Format: String, Codable, Sendable, CaseIterable {
         /// The AAC format.
         case aac
         /// The OPUS format.
@@ -118,7 +118,7 @@ public struct AudioCodecSettings: Codable, Sendable {
             }
         }
 
-        func makeSampleRate(_ input: Float64, output: Float64) -> Float64 {
+        package func makeSampleRate(_ input: Float64, output: Float64) -> Float64 {
             let sampleRate = output == 0 ? input : output
             guard let supportedSampleRate else {
                 return sampleRate
@@ -150,9 +150,15 @@ public struct AudioCodecSettings: Codable, Sendable {
             }
         }
 
-        func makeOutputAudioFormat(_ format: AVAudioFormat, sampleRate: Float64) -> AVAudioFormat? {
+        func makeOutputAudioFormat(_ format: AVAudioFormat, sampleRate: Float64, channelMap: [Int]?) -> AVAudioFormat? {
+            let channelCount: UInt32
+            if let channelMap {
+                channelCount = UInt32(channelMap.count)
+            } else {
+                channelCount = format.channelCount
+            }
             let mSampleRate = makeSampleRate(format.sampleRate, output: sampleRate)
-            let config = AudioSpecificConfig.ChannelConfiguration(channelCount: format.channelCount)
+            let config = AudioSpecificConfig.ChannelConfiguration(channelCount: channelCount)
             var streamDescription = AudioStreamBasicDescription(
                 mSampleRate: mSampleRate,
                 mFormatID: formatID,
@@ -225,6 +231,10 @@ public struct AudioCodecSettings: Codable, Sendable {
         if channelMap != oldValue?.channelMap, let newChannelMap = validatedChannelMap(converter) {
             converter.channelMap = newChannelMap
         }
+    }
+
+    func invalidateConverter(_ rhs: AudioCodecSettings) -> Bool {
+        return !(format == rhs.format && channelMap == rhs.channelMap)
     }
 
     private func validatedChannelMap(_ converter: AVAudioConverter) -> [NSNumber]? {

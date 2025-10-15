@@ -32,7 +32,7 @@ extension AVCaptureDevice.Format {
             return false
         }
         let diff = frameRates.map { abs($0 - frameRate) }
-        if let minElement: Float64 = diff.min() {
+        if let minElement = diff.min() {
             for i in 0..<diff.count where diff[i] == minElement {
                 return true
             }

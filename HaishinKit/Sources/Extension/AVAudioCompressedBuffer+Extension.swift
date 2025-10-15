@@ -17,7 +17,7 @@ extension AVAudioCompressedBuffer {
         return true
     }
 
-    func encode(to data: inout Data) {
+    package func encode(to data: inout Data) {
         guard let config = AudioSpecificConfig(formatDescription: format.formatDescription) else {
             return
         }

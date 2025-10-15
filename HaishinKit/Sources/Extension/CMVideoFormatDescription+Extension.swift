@@ -2,7 +2,7 @@ import CoreImage
 import CoreMedia
 
 extension CMVideoFormatDescription {
-    public var isCompressed: Bool {
+    package var isCompressed: Bool {
         switch CMFormatDescriptionGetMediaSubType(self) {
         case kCVPixelFormatType_1Monochrome,
              kCVPixelFormatType_2Indexed,
@@ -76,20 +76,6 @@ extension CMVideoFormatDescription {
             return atoms["avcC"] as? Data
         case .hevc:
             return atoms["hvcC"] as? Data
-        default:
-            return nil
-        }
-    }
-
-    func makeDecodeConfigurtionRecord() -> (any DecoderConfigurationRecord)? {
-        guard let configurationBox else {
-            return nil
-        }
-        switch mediaSubType {
-        case .h264:
-            return AVCDecoderConfigurationRecord(data: configurationBox)
-        case .hevc:
-            return HEVCDecoderConfigurationRecord(data: configurationBox)
         default:
             return nil
         }

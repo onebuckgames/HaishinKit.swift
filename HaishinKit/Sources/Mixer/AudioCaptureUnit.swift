@@ -51,10 +51,10 @@ final class AudioCaptureUnit: CaptureUnit {
     var devices: [UInt8: AudioDeviceUnit] = [:]
     #endif
 
-    private let session: CaptureSession
+    private let session: (any CaptureSessionConvertible)
     private var continutation: AsyncStream<(AVAudioPCMBuffer, AVAudioTime)>.Continuation?
 
-    init(_ session: CaptureSession) {
+    init(_ session: (some CaptureSessionConvertible)) {
         self.session = session
     }
 

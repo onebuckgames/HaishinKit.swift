@@ -1,7 +1,7 @@
 import Foundation
 import VideoToolbox
 
-/// The VideoCodecSettings class  specifying video compression settings.
+/// Constraints on the video codec compression settings.
 public struct VideoCodecSettings: Codable, Sendable {
     /// The number of frame rate for 30fps.
     public static let frameInterval30 = (1 / 30) - 0.001
@@ -16,23 +16,26 @@ public struct VideoCodecSettings: Codable, Sendable {
     public static let `default` = VideoCodecSettings()
 
     /// A bitRate mode that affectes how to encode the video source.
-    public enum BitRateMode: String, Codable, Sendable {
+    public struct BitRateMode: Sendable, CustomStringConvertible, Codable, Hashable, Equatable {
+        public static func == (lhs: VideoCodecSettings.BitRateMode, rhs: VideoCodecSettings.BitRateMode) -> Bool {
+            lhs.key == rhs.key
+        }
+
         /// The average bit rate.
-        case average
+        public static let average = BitRateMode(key: .averageBitRate)
+
         /// The constant bit rate.
         @available(iOS 16.0, tvOS 16.0, macOS 13.0, *)
-        case constant
+        public static let constant = BitRateMode(key: .constantBitRate)
 
-        var key: VTSessionOptionKey {
-            if #available(iOS 16.0, tvOS 16.0, macOS 13.0, *) {
-                switch self {
-                case .average:
-                    return .averageBitRate
-                case .constant:
-                    return .constantBitRate
-                }
-            }
-            return .averageBitRate
+        let key: VTSessionOptionKey
+
+        public var description: String {
+            key.CFString as String
+        }
+
+        public func hash(into hasher: inout Hasher) {
+            return hasher.combine(description)
         }
     }
 
@@ -53,7 +56,7 @@ public struct VideoCodecSettings: Codable, Sendable {
     }
 
     /// The type of the VideoCodec supports format.
-    enum Format: Codable {
+    package enum Format: Codable, Sendable, CaseIterable {
         case h264
         case hevc
 
@@ -106,12 +109,14 @@ public struct VideoCodecSettings: Codable, Sendable {
     public var allowFrameReordering: Bool? // swiftlint:disable:this discouraged_optional_boolean
     /// Specifies the dataRateLimits
     public var dataRateLimits: [Double]?
-    /// Specifies the HardwareEncoder is enabled(TRUE), or not(FALSE) for macOS.
-    public var isHardwareEncoderEnabled: Bool
+    /// Specifies the low-latency opretaion for an encoder.
+    public var isLowLatencyRateControlEnabled: Bool
+    /// Specifies the hardware accelerated encoder is enabled(TRUE), or not(FALSE) for macOS.
+    public var isHardwareAcceleratedEnabled: Bool
     /// Specifies the video frame interval.
     public var frameInterval: Double = 0.0
 
-    var format: Format = .h264
+    package var format: Format = .h264
 
     /// Creates a new VideoCodecSettings instance.
     public init(
@@ -125,7 +130,8 @@ public struct VideoCodecSettings: Codable, Sendable {
         allowFrameReordering: Bool? = nil,
         // swiftlint:enable discouraged_optional_boolean
         dataRateLimits: [Double]? = [0.0, 0.0],
-        isHardwareEncoderEnabled: Bool = true
+        isLowLatencyRateControlEnabled: Bool = false,
+        isHardwareAcceleratedEnabled: Bool = true
     ) {
         self.videoSize = videoSize
         self.bitRate = bitRate
@@ -135,7 +141,8 @@ public struct VideoCodecSettings: Codable, Sendable {
         self.maxKeyFrameIntervalDuration = maxKeyFrameIntervalDuration
         self.allowFrameReordering = allowFrameReordering
         self.dataRateLimits = dataRateLimits
-        self.isHardwareEncoderEnabled = isHardwareEncoderEnabled
+        self.isLowLatencyRateControlEnabled = isLowLatencyRateControlEnabled
+        self.isHardwareAcceleratedEnabled = isHardwareAcceleratedEnabled
         if profileLevel.contains("HEVC") {
             self.format = .hevc
         }
@@ -149,7 +156,8 @@ public struct VideoCodecSettings: Codable, Sendable {
                     bitRateMode == rhs.bitRateMode &&
                     profileLevel == rhs.profileLevel &&
                     dataRateLimits == rhs.dataRateLimits &&
-                    isHardwareEncoderEnabled == rhs.isHardwareEncoderEnabled
+                    isLowLatencyRateControlEnabled == rhs.isLowLatencyRateControlEnabled &&
+                    isHardwareAcceleratedEnabled == rhs.isHardwareAcceleratedEnabled
         )
     }
 
@@ -157,10 +165,7 @@ public struct VideoCodecSettings: Codable, Sendable {
         if bitRate != rhs.bitRate {
             logger.info("bitRate change from ", rhs.bitRate, " to ", bitRate)
             let option = VTSessionOption(key: bitRateMode.key, value: NSNumber(value: bitRate))
-            if let status = codec.session?.setOption(option), status != noErr {
-                // ToDo
-                // codec.delegate?.videoCodec(codec, errorOccurred: .failedToSetOption(status: status, option: option))
-            }
+            _ = codec.session?.setOption(option)
         }
         if frameInterval != rhs.frameInterval {
             codec.frameInterval = frameInterval
@@ -191,7 +196,7 @@ public struct VideoCodecSettings: Codable, Sendable {
             }
         }
         #if os(macOS)
-        if isHardwareEncoderEnabled {
+        if isHardwareAcceleratedEnabled {
             options.insert(.init(key: .encoderID, value: format.encoderID))
             options.insert(.init(key: .enableHardwareAcceleratedVideoEncoder, value: kCFBooleanTrue))
             options.insert(.init(key: .requireHardwareAcceleratedVideoEncoder, value: kCFBooleanTrue))
@@ -201,5 +206,12 @@ public struct VideoCodecSettings: Codable, Sendable {
             options.insert(.init(key: .H264EntropyMode, value: kVTH264EntropyMode_CABAC))
         }
         return options
+    }
+
+    func makeEncoderSpecification() -> CFDictionary? {
+        if isLowLatencyRateControlEnabled, #available(iOS 14.5, macCatalyst 14.5, macOS 11.3, tvOS 14.5, visionOS 1.0, *) {
+            return [kVTVideoEncoderSpecification_EnableLowLatencyRateControl: true as CFBoolean] as CFDictionary
+        }
+        return nil
     }
 }

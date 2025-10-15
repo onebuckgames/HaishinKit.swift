@@ -1,7 +1,7 @@
 import Foundation
 import VideoToolbox
 
-struct VTSessionOptionKey: RawRepresentable {
+struct VTSessionOptionKey: Codable, RawRepresentable {
     typealias RawValue = String
 
     static let depth = VTSessionOptionKey(rawValue: kVTCompressionPropertyKey_Depth as String)

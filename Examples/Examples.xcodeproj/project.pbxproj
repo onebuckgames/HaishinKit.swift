@@ -7,103 +7,50 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		BC2902352AA0E66A004821D2 /* Screencast.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 2915EC521D85BDF100621092 /* Screencast.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		BC33A11D2CDF52550016EEA0 /* HaishinKit in Frameworks */ = {isa = PBXBuildFile; productRef = BC33A11C2CDF52550016EEA0 /* HaishinKit */; };
-		BC33A11F2CDF52550016EEA0 /* SRTHaishinKit in Frameworks */ = {isa = PBXBuildFile; productRef = BC33A11E2CDF52550016EEA0 /* SRTHaishinKit */; };
+		BC05F96E2E3D248A002BCC92 /* Preference.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC9129382D12EA820077EFF3 /* Preference.swift */; };
 		BC33A1212CDF525B0016EEA0 /* HaishinKit in Frameworks */ = {isa = PBXBuildFile; productRef = BC33A1202CDF525B0016EEA0 /* HaishinKit */; };
 		BC33A1232CDF525B0016EEA0 /* SRTHaishinKit in Frameworks */ = {isa = PBXBuildFile; productRef = BC33A1222CDF525B0016EEA0 /* SRTHaishinKit */; };
-		BC33A1292CDF526C0016EEA0 /* HaishinKit in Frameworks */ = {isa = PBXBuildFile; productRef = BC33A1282CDF526C0016EEA0 /* HaishinKit */; };
-		BC33A12B2CDF526C0016EEA0 /* SRTHaishinKit in Frameworks */ = {isa = PBXBuildFile; productRef = BC33A12A2CDF526C0016EEA0 /* SRTHaishinKit */; };
-		BC47FA352CE61FCF002900AE /* MoQTHaishinKit in Frameworks */ = {isa = PBXBuildFile; productRef = BC47FA342CE61FCF002900AE /* MoQTHaishinKit */; };
-		BC9129852D12EB570077EFF3 /* HKStreamSwitcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC9129372D12EA820077EFF3 /* HKStreamSwitcher.swift */; };
-		BC9129862D12EB570077EFF3 /* HKStreamSwitcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC9129372D12EA820077EFF3 /* HKStreamSwitcher.swift */; };
-		BC9129872D12EB570077EFF3 /* HKStreamSwitcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC9129372D12EA820077EFF3 /* HKStreamSwitcher.swift */; };
-		BC9129882D12EB570077EFF3 /* HKStreamSwitcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC9129372D12EA820077EFF3 /* HKStreamSwitcher.swift */; };
-		BC9129892D12EB5E0077EFF3 /* Preference.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC9129382D12EA820077EFF3 /* Preference.swift */; };
-		BC91298A2D12EB5E0077EFF3 /* Preference.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC9129382D12EA820077EFF3 /* Preference.swift */; };
+		BC4B7DCD2E86D06700973BD7 /* ReplayKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BCD5C7F92E3F189700A69F16 /* ReplayKit.framework */; };
+		BC4B7DD42E86D06700973BD7 /* Screencast.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = BC4B7DCC2E86D06700973BD7 /* Screencast.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		BC4B7DE02E86D13C00973BD7 /* HaishinKit in Frameworks */ = {isa = PBXBuildFile; productRef = BC4B7DDF2E86D13C00973BD7 /* HaishinKit */; };
+		BC4B7DE22E86D13C00973BD7 /* MoQTHaishinKit in Frameworks */ = {isa = PBXBuildFile; productRef = BC4B7DE12E86D13C00973BD7 /* MoQTHaishinKit */; };
+		BC4B7DE42E86D13C00973BD7 /* RTCHaishinKit in Frameworks */ = {isa = PBXBuildFile; productRef = BC4B7DE32E86D13C00973BD7 /* RTCHaishinKit */; };
+		BC4B7DE62E86D13C00973BD7 /* RTMPHaishinKit in Frameworks */ = {isa = PBXBuildFile; productRef = BC4B7DE52E86D13C00973BD7 /* RTMPHaishinKit */; };
+		BC4B7DE82E86D13C00973BD7 /* SRTHaishinKit in Frameworks */ = {isa = PBXBuildFile; productRef = BC4B7DE72E86D13C00973BD7 /* SRTHaishinKit */; };
+		BC4B7DE92E86D14A00973BD7 /* Preference.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC9129382D12EA820077EFF3 /* Preference.swift */; };
+		BC6842B62E3D1294008FBFEE /* HaishinKit in Frameworks */ = {isa = PBXBuildFile; productRef = BC6842B52E3D1294008FBFEE /* HaishinKit */; };
+		BC6842B82E3D1294008FBFEE /* MoQTHaishinKit in Frameworks */ = {isa = PBXBuildFile; productRef = BC6842B72E3D1294008FBFEE /* MoQTHaishinKit */; };
+		BC6842BA2E3D1294008FBFEE /* RTMPHaishinKit in Frameworks */ = {isa = PBXBuildFile; productRef = BC6842B92E3D1294008FBFEE /* RTMPHaishinKit */; };
+		BC6842BC2E3D1294008FBFEE /* SRTHaishinKit in Frameworks */ = {isa = PBXBuildFile; productRef = BC6842BB2E3D1294008FBFEE /* SRTHaishinKit */; };
 		BC91298B2D12EB5E0077EFF3 /* Preference.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC9129382D12EA820077EFF3 /* Preference.swift */; };
 		BC91298C2D12EB5E0077EFF3 /* Preference.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC9129382D12EA820077EFF3 /* Preference.swift */; };
-		BC91298D2D12EB5E0077EFF3 /* Preference.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC9129382D12EA820077EFF3 /* Preference.swift */; };
-		BC9129D22D12EBCE0077EFF3 /* HKStreamSwitcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC9129372D12EA820077EFF3 /* HKStreamSwitcher.swift */; };
 		BC912A812D12F10C0077EFF3 /* libc++.1.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = BC912A802D12F0900077EFF3 /* libc++.1.tbd */; };
 		BC912DDD2D185D360077EFF3 /* MoQTHaishinKit in Frameworks */ = {isa = PBXBuildFile; productRef = BC912DDC2D185D360077EFF3 /* MoQTHaishinKit */; };
-		BCD917012D3A94B100D30743 /* HaishinKit in Frameworks */ = {isa = PBXBuildFile; productRef = BCD917002D3A94B100D30743 /* HaishinKit */; };
-		BCD917032D3A94B100D30743 /* MoQTHaishinKit in Frameworks */ = {isa = PBXBuildFile; productRef = BCD917022D3A94B100D30743 /* MoQTHaishinKit */; };
-		BCD917052D3A94B100D30743 /* SRTHaishinKit in Frameworks */ = {isa = PBXBuildFile; productRef = BCD917042D3A94B100D30743 /* SRTHaishinKit */; };
+		BCD2478C2E54C04E00C64280 /* RTCHaishinKit in Frameworks */ = {isa = PBXBuildFile; productRef = BCD2478B2E54C04E00C64280 /* RTCHaishinKit */; };
 		BCD917072D3A94BC00D30743 /* HaishinKit in Frameworks */ = {isa = PBXBuildFile; productRef = BCD917062D3A94BC00D30743 /* HaishinKit */; };
 		BCD917092D3A94BC00D30743 /* MoQTHaishinKit in Frameworks */ = {isa = PBXBuildFile; productRef = BCD917082D3A94BC00D30743 /* MoQTHaishinKit */; };
 		BCD9170B2D3A94BC00D30743 /* SRTHaishinKit in Frameworks */ = {isa = PBXBuildFile; productRef = BCD9170A2D3A94BC00D30743 /* SRTHaishinKit */; };
+		BCEC2BBE2E104D9100422F8F /* RTMPHaishinKit in Frameworks */ = {isa = PBXBuildFile; productRef = BCEC2BBD2E104D9100422F8F /* RTMPHaishinKit */; };
+		BCEC2BC02E104D9A00422F8F /* RTMPHaishinKit in Frameworks */ = {isa = PBXBuildFile; productRef = BCEC2BBF2E104D9A00422F8F /* RTMPHaishinKit */; };
+		BCFE628F2E7710A100941209 /* Preference.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC9129382D12EA820077EFF3 /* Preference.swift */; };
+		BCFE62912E7710D800941209 /* HaishinKit in Frameworks */ = {isa = PBXBuildFile; productRef = BCFE62902E7710D800941209 /* HaishinKit */; };
+		BCFE62A82E77179F00941209 /* RTCHaishinKit in Frameworks */ = {isa = PBXBuildFile; productRef = BCFE62A72E77179F00941209 /* RTCHaishinKit */; };
+		BCFE62AA2E77179F00941209 /* RTMPHaishinKit in Frameworks */ = {isa = PBXBuildFile; productRef = BCFE62A92E77179F00941209 /* RTMPHaishinKit */; };
+		BCFE62AC2E77179F00941209 /* SRTHaishinKit in Frameworks */ = {isa = PBXBuildFile; productRef = BCFE62AB2E77179F00941209 /* SRTHaishinKit */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		BC2902362AA0E66A004821D2 /* PBXContainerItemProxy */ = {
+		BC4B7DD22E86D06700973BD7 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 2945CBB41B4BE66000104112 /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = 2915EC511D85BDF100621092;
+			remoteGlobalIDString = BC4B7DCB2E86D06700973BD7;
 			remoteInfo = Screencast;
-		};
-		BCB7988D2CE06AEC0059DFE9 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 2945CBB41B4BE66000104112 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 29C9327D1CD76FB800283FC5;
-			remoteInfo = "Example iOS";
 		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		2911F98F1DE2DA04007FD1EC /* CopyFiles */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 10;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		29373DBA205524D700099860 /* Embed Frameworks */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 10;
-			files = (
-			);
-			name = "Embed Frameworks";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		29562B8C1E6BFFE000BB940A /* Embed Frameworks */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 10;
-			files = (
-			);
-			name = "Embed Frameworks";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		29EF037B1CD79B3900473D99 /* Embed Frameworks */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 10;
-			files = (
-			);
-			name = "Embed Frameworks";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		BC2902382AA0E66A004821D2 /* Embed Foundation Extensions */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 13;
-			files = (
-				BC2902352AA0E66A004821D2 /* Screencast.appex in Embed Foundation Extensions */,
-			);
-			name = "Embed Foundation Extensions";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		BC3E49D62C45617100A9C5B6 /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "";
@@ -123,75 +70,58 @@
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		BCD5C8062E3F189700A69F16 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				BC4B7DD42E86D06700973BD7 /* Screencast.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		2915EC521D85BDF100621092 /* Screencast.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = Screencast.appex; sourceTree = BUILT_PRODUCTS_DIR; };
-		29C9327E1CD76FB800283FC5 /* Example iOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Example iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
-		29C932941CD76FD300283FC5 /* Example macOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Example macOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		29D3D4EF1ED0531500DD4AA6 /* Example tvOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Example tvOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		BC4B7DCC2E86D06700973BD7 /* Screencast.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = Screencast.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		BC6841622E3CFBE0008FBFEE /* Example iOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Example iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		BC7A0E3D2B088FA7005FB2F7 /* Example visionOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Example visionOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		BC91287D2D12E7540077EFF3 /* Examples.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Examples.xcodeproj; sourceTree = "<group>"; };
 		BC9128F82D12E9970077EFF3 /* Examples.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Examples.xcodeproj; sourceTree = "<group>"; };
-		BC9129372D12EA820077EFF3 /* HKStreamSwitcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HKStreamSwitcher.swift; sourceTree = "<group>"; };
 		BC9129382D12EA820077EFF3 /* Preference.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Preference.swift; sourceTree = "<group>"; };
 		BC912A7F2D12F0830077EFF3 /* libc++.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = "libc++.tbd"; path = "Platforms/XROS.platform/Developer/SDKs/XROS2.1.sdk/usr/lib/libc++.tbd"; sourceTree = DEVELOPER_DIR; };
 		BC912A802D12F0900077EFF3 /* libc++.1.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = "libc++.1.tbd"; path = "Platforms/XROS.platform/Developer/SDKs/XROS2.1.sdk/usr/lib/libc++.1.tbd"; sourceTree = DEVELOPER_DIR; };
-		BCB798892CE06AEC0059DFE9 /* Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Tests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		BCD5C7F92E3F189700A69F16 /* ReplayKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ReplayKit.framework; path = System/Library/Frameworks/ReplayKit.framework; sourceTree = SDKROOT; };
 		BCD916432D3A934400D30743 /* HaishinKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = HaishinKit; path = ../; sourceTree = SOURCE_ROOT; };
+		BCFE627E2E770A9900941209 /* Example macOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Example macOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		BC9129762D12EADB0077EFF3 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+		BC36B4F82E77201200AADEC1 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				/Localized/LaunchScreen.storyboard,
-				AppDelegate.swift,
-				Assets.xcassets,
-				AudioCapture.swift,
-				Icon.png,
-				IngestViewController.swift,
-				Main.storyboard,
-				MemoryUsage.swift,
-				PlaybackContainerViewController.swift,
-				PlaybackViewController.swift,
-				PreferenceViewController.swift,
+				PreferenceView.swift,
+				PreferenceViewModel.swift,
 				VisualEffect.swift,
 			);
-			target = 29C9327D1CD76FB800283FC5 /* Example iOS */;
+			target = BCFE627D2E770A9900941209 /* Example macOS */;
 		};
-		BC91298F2D12EB960077EFF3 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+		BC4B7DDD2E86D06E00973BD7 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Screencast/Info.plist,
+				Screencast/SampleHandler.swift,
+			);
+			target = BC6841612E3CFBE0008FBFEE /* Example iOS */;
+		};
+		BC4B7DDE2E86D06E00973BD7 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Screencast/SampleHandler.swift,
 			);
-			target = 2915EC511D85BDF100621092 /* Screencast */;
-		};
-		BC912A582D12EE6C0077EFF3 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				/Localized/Main.storyboard,
-				AppDelegate.swift,
-				Assets.xcassets,
-				CameraIngestViewController.swift,
-				DnDableView.swift,
-				DnDDelegate.swift,
-				"Extension/Data+Extension.swift",
-				"Extension/NSObject+Extension.swift",
-				"Extension/NSStoryboard.Name+Extension.swift",
-				"Extension/NSViewController+Extension.swift",
-				FLVAnalyzerViewController.swift,
-				FLVReader.swift,
-				game_jikkyou.png,
-				MainSplitViewController.swift,
-				MainWindowController.swift,
-				MenuViewController.swift,
-				PlaybackViewController.swift,
-				PreferenceViewController.swift,
-				SCStreamPublishViewController.swift,
-				VisualEffect.swift,
-			);
-			target = 29C932931CD76FD300283FC5 /* Example macOS */;
+			target = BC4B7DCB2E86D06700973BD7 /* Screencast */;
 		};
 		BC912A6D2D12EFB10077EFF3 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
@@ -207,58 +137,61 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				ContentView.swift,
-				Example_visionOSApp.swift,
-				PiPHKSwiftUiView.swift,
-				ViewModel.swift,
+				HaishinApp.swift,
+			);
+			target = BC7A0E3C2B088FA7005FB2F7 /* Example visionOS */;
+		};
+		BCABAC0D2E65BBBC00B0E878 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				PlaybackView.swift,
+				PlaybackViewModel.swift,
 			);
 			target = BC7A0E3C2B088FA7005FB2F7 /* Example visionOS */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		BC91294C2D12EA8A0077EFF3 /* iOS */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (BC9129762D12EADB0077EFF3 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, BC91298F2D12EB960077EFF3 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = iOS; sourceTree = "<group>"; };
-		BC9129642D12EA8E0077EFF3 /* macOS */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (BC912A582D12EE6C0077EFF3 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = macOS; sourceTree = "<group>"; };
+		BC6841632E3CFBE0008FBFEE /* iOS */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (BC4B7DDD2E86D06E00973BD7 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, BC36B4F82E77201200AADEC1 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, BCABAC0D2E65BBBC00B0E878 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, BC4B7DDE2E86D06E00973BD7 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = iOS; sourceTree = "<group>"; };
 		BC91296B2D12EA910077EFF3 /* tvOS */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (BC912A6D2D12EFB10077EFF3 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = tvOS; sourceTree = "<group>"; };
 		BC9129712D12EA930077EFF3 /* visionOS */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (BC912A722D12F0100077EFF3 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = visionOS; sourceTree = "<group>"; };
+		BCFE627F2E770A9900941209 /* macOS */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = macOS; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		2915EC4F1D85BDF100621092 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				BC33A1292CDF526C0016EEA0 /* HaishinKit in Frameworks */,
-				BC33A12B2CDF526C0016EEA0 /* SRTHaishinKit in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		29C9327B1CD76FB800283FC5 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				BCD917012D3A94B100D30743 /* HaishinKit in Frameworks */,
-				BCD917032D3A94B100D30743 /* MoQTHaishinKit in Frameworks */,
-				BCD917052D3A94B100D30743 /* SRTHaishinKit in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		29C932911CD76FD300283FC5 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				BC47FA352CE61FCF002900AE /* MoQTHaishinKit in Frameworks */,
-				BC33A11F2CDF52550016EEA0 /* SRTHaishinKit in Frameworks */,
-				BC33A11D2CDF52550016EEA0 /* HaishinKit in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		29D3D4EC1ED0531500DD4AA6 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				BC912DDD2D185D360077EFF3 /* MoQTHaishinKit in Frameworks */,
+				BCEC2BBE2E104D9100422F8F /* RTMPHaishinKit in Frameworks */,
 				BC33A1232CDF525B0016EEA0 /* SRTHaishinKit in Frameworks */,
 				BC33A1212CDF525B0016EEA0 /* HaishinKit in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BC4B7DC92E86D06700973BD7 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BC4B7DE22E86D13C00973BD7 /* MoQTHaishinKit in Frameworks */,
+				BC4B7DE62E86D13C00973BD7 /* RTMPHaishinKit in Frameworks */,
+				BC4B7DE82E86D13C00973BD7 /* SRTHaishinKit in Frameworks */,
+				BC4B7DE02E86D13C00973BD7 /* HaishinKit in Frameworks */,
+				BC4B7DE42E86D13C00973BD7 /* RTCHaishinKit in Frameworks */,
+				BC4B7DCD2E86D06700973BD7 /* ReplayKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BC68415F2E3CFBE0008FBFEE /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BC6842B62E3D1294008FBFEE /* HaishinKit in Frameworks */,
+				BCD2478C2E54C04E00C64280 /* RTCHaishinKit in Frameworks */,
+				BC6842B82E3D1294008FBFEE /* MoQTHaishinKit in Frameworks */,
+				BC6842BC2E3D1294008FBFEE /* SRTHaishinKit in Frameworks */,
+				BC6842BA2E3D1294008FBFEE /* RTMPHaishinKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -267,16 +200,21 @@
 			buildActionMask = 2147483647;
 			files = (
 				BCD917092D3A94BC00D30743 /* MoQTHaishinKit in Frameworks */,
+				BCEC2BC02E104D9A00422F8F /* RTMPHaishinKit in Frameworks */,
 				BCD917072D3A94BC00D30743 /* HaishinKit in Frameworks */,
 				BCD9170B2D3A94BC00D30743 /* SRTHaishinKit in Frameworks */,
 				BC912A812D12F10C0077EFF3 /* libc++.1.tbd in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		BCB798862CE06AEC0059DFE9 /* Frameworks */ = {
+		BCFE627B2E770A9900941209 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BCFE62912E7710D800941209 /* HaishinKit in Frameworks */,
+				BCFE62AC2E77179F00941209 /* SRTHaishinKit in Frameworks */,
+				BCFE62AA2E77179F00941209 /* RTMPHaishinKit in Frameworks */,
+				BCFE62A82E77179F00941209 /* RTCHaishinKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -286,10 +224,9 @@
 		2945CBB31B4BE66000104112 = {
 			isa = PBXGroup;
 			children = (
-				BC9129372D12EA820077EFF3 /* HKStreamSwitcher.swift */,
 				BC9129382D12EA820077EFF3 /* Preference.swift */,
-				BC91294C2D12EA8A0077EFF3 /* iOS */,
-				BC9129642D12EA8E0077EFF3 /* macOS */,
+				BC6841632E3CFBE0008FBFEE /* iOS */,
+				BCFE627F2E770A9900941209 /* macOS */,
 				BC91296B2D12EA910077EFF3 /* tvOS */,
 				BC9129712D12EA930077EFF3 /* visionOS */,
 				BC912A762D12F0600077EFF3 /* Frameworks */,
@@ -301,12 +238,11 @@
 		2945CBBE1B4BE66000104112 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				29C9327E1CD76FB800283FC5 /* Example iOS.app */,
-				29C932941CD76FD300283FC5 /* Example macOS.app */,
-				2915EC521D85BDF100621092 /* Screencast.appex */,
 				29D3D4EF1ED0531500DD4AA6 /* Example tvOS.app */,
 				BC7A0E3D2B088FA7005FB2F7 /* Example visionOS.app */,
-				BCB798892CE06AEC0059DFE9 /* Tests.xctest */,
+				BC6841622E3CFBE0008FBFEE /* Example iOS.app */,
+				BCFE627E2E770A9900941209 /* Example macOS.app */,
+				BC4B7DCC2E86D06700973BD7 /* Screencast.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -327,6 +263,7 @@
 				BC912A802D12F0900077EFF3 /* libc++.1.tbd */,
 				BC912A7F2D12F0830077EFF3 /* libc++.tbd */,
 				BCD916432D3A934400D30743 /* HaishinKit */,
+				BCD5C7F92E3F189700A69F16 /* ReplayKit.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -334,65 +271,6 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		2915EC511D85BDF100621092 /* Screencast */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 2915EC751D85BDF200621092 /* Build configuration list for PBXNativeTarget "Screencast" */;
-			buildPhases = (
-				2915EC4F1D85BDF100621092 /* Frameworks */,
-				2915EC4E1D85BDF100621092 /* Sources */,
-				2915EC501D85BDF100621092 /* Resources */,
-				BC3E49D62C45617100A9C5B6 /* Embed Frameworks */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = Screencast;
-			productName = Screencast;
-			productReference = 2915EC521D85BDF100621092 /* Screencast.appex */;
-			productType = "com.apple.product-type.app-extension";
-		};
-		29C9327D1CD76FB800283FC5 /* Example iOS */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 29C9328D1CD76FB800283FC5 /* Build configuration list for PBXNativeTarget "Example iOS" */;
-			buildPhases = (
-				29C9327A1CD76FB800283FC5 /* Sources */,
-				29C9327B1CD76FB800283FC5 /* Frameworks */,
-				29C9327C1CD76FB800283FC5 /* Resources */,
-				29EF037B1CD79B3900473D99 /* Embed Frameworks */,
-				2911F98F1DE2DA04007FD1EC /* CopyFiles */,
-				BCE5212828DCCD1E006A14E5 /* ShellScript */,
-				BC2902382AA0E66A004821D2 /* Embed Foundation Extensions */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				BC2902372AA0E66A004821D2 /* PBXTargetDependency */,
-			);
-			name = "Example iOS";
-			productName = "Example iOS";
-			productReference = 29C9327E1CD76FB800283FC5 /* Example iOS.app */;
-			productType = "com.apple.product-type.application";
-		};
-		29C932931CD76FD300283FC5 /* Example macOS */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 29C9329E1CD76FD400283FC5 /* Build configuration list for PBXNativeTarget "Example macOS" */;
-			buildPhases = (
-				29C932901CD76FD300283FC5 /* Sources */,
-				29C932911CD76FD300283FC5 /* Frameworks */,
-				29C932921CD76FD300283FC5 /* Resources */,
-				29562B8C1E6BFFE000BB940A /* Embed Frameworks */,
-				29E51F2A1FEFDEB300F839F4 /* ShellScript */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = "Example macOS";
-			productName = "Example MacOS";
-			productReference = 29C932941CD76FD300283FC5 /* Example macOS.app */;
-			productType = "com.apple.product-type.application";
-		};
 		29D3D4EE1ED0531500DD4AA6 /* Example tvOS */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 29D3D4FB1ED0531600DD4AA6 /* Build configuration list for PBXNativeTarget "Example tvOS" */;
@@ -410,6 +288,59 @@
 			name = "Example tvOS";
 			productName = "Example tvOS";
 			productReference = 29D3D4EF1ED0531500DD4AA6 /* Example tvOS.app */;
+			productType = "com.apple.product-type.application";
+		};
+		BC4B7DCB2E86D06700973BD7 /* Screencast */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = BC4B7DD62E86D06700973BD7 /* Build configuration list for PBXNativeTarget "Screencast" */;
+			buildPhases = (
+				BC4B7DC82E86D06700973BD7 /* Sources */,
+				BC4B7DC92E86D06700973BD7 /* Frameworks */,
+				BC4B7DCA2E86D06700973BD7 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Screencast;
+			packageProductDependencies = (
+				BC4B7DDF2E86D13C00973BD7 /* HaishinKit */,
+				BC4B7DE12E86D13C00973BD7 /* MoQTHaishinKit */,
+				BC4B7DE32E86D13C00973BD7 /* RTCHaishinKit */,
+				BC4B7DE52E86D13C00973BD7 /* RTMPHaishinKit */,
+				BC4B7DE72E86D13C00973BD7 /* SRTHaishinKit */,
+			);
+			productName = Screencast;
+			productReference = BC4B7DCC2E86D06700973BD7 /* Screencast.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		BC6841612E3CFBE0008FBFEE /* Example iOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = BC68416B2E3CFBE2008FBFEE /* Build configuration list for PBXNativeTarget "Example iOS" */;
+			buildPhases = (
+				BC68415E2E3CFBE0008FBFEE /* Sources */,
+				BC68415F2E3CFBE0008FBFEE /* Frameworks */,
+				BC6841602E3CFBE0008FBFEE /* Resources */,
+				BCD5C8062E3F189700A69F16 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				BC4B7DD32E86D06700973BD7 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				BC6841632E3CFBE0008FBFEE /* iOS */,
+			);
+			name = "Example iOS";
+			packageProductDependencies = (
+				BC6842B52E3D1294008FBFEE /* HaishinKit */,
+				BC6842B72E3D1294008FBFEE /* MoQTHaishinKit */,
+				BC6842B92E3D1294008FBFEE /* RTMPHaishinKit */,
+				BC6842BB2E3D1294008FBFEE /* SRTHaishinKit */,
+				BCD2478B2E54C04E00C64280 /* RTCHaishinKit */,
+			);
+			productName = "Example iOS";
+			productReference = BC6841622E3CFBE0008FBFEE /* Example iOS.app */;
 			productType = "com.apple.product-type.application";
 		};
 		BC7A0E3C2B088FA7005FB2F7 /* Example visionOS */ = {
@@ -430,30 +361,37 @@
 				BCD917062D3A94BC00D30743 /* HaishinKit */,
 				BCD917082D3A94BC00D30743 /* MoQTHaishinKit */,
 				BCD9170A2D3A94BC00D30743 /* SRTHaishinKit */,
+				BCEC2BBF2E104D9A00422F8F /* RTMPHaishinKit */,
 			);
 			productName = "Example visionOS";
 			productReference = BC7A0E3D2B088FA7005FB2F7 /* Example visionOS.app */;
 			productType = "com.apple.product-type.application";
 		};
-		BCB798882CE06AEC0059DFE9 /* Tests */ = {
+		BCFE627D2E770A9900941209 /* Example macOS */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = BCB798912CE06AEC0059DFE9 /* Build configuration list for PBXNativeTarget "Tests" */;
+			buildConfigurationList = BCFE62872E770A9C00941209 /* Build configuration list for PBXNativeTarget "Example macOS" */;
 			buildPhases = (
-				BCB798852CE06AEC0059DFE9 /* Sources */,
-				BCB798862CE06AEC0059DFE9 /* Frameworks */,
-				BCB798872CE06AEC0059DFE9 /* Resources */,
+				BCFE627A2E770A9900941209 /* Sources */,
+				BCFE627B2E770A9900941209 /* Frameworks */,
+				BCFE627C2E770A9900941209 /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				BCB7988E2CE06AEC0059DFE9 /* PBXTargetDependency */,
 			);
-			name = Tests;
+			fileSystemSynchronizedGroups = (
+				BCFE627F2E770A9900941209 /* macOS */,
+			);
+			name = "Example macOS";
 			packageProductDependencies = (
+				BCFE62902E7710D800941209 /* HaishinKit */,
+				BCFE62A72E77179F00941209 /* RTCHaishinKit */,
+				BCFE62A92E77179F00941209 /* RTMPHaishinKit */,
+				BCFE62AB2E77179F00941209 /* SRTHaishinKit */,
 			);
-			productName = Tests;
-			productReference = BCB798892CE06AEC0059DFE9 /* Tests.xctest */;
-			productType = "com.apple.product-type.bundle.unit-test";
+			productName = "Example macOS";
+			productReference = BCFE627E2E770A9900941209 /* Example macOS.app */;
+			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
 
@@ -463,38 +401,25 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastSwiftMigration = 0700;
-				LastSwiftUpdateCheck = 1610;
+				LastSwiftUpdateCheck = 1640;
 				LastUpgradeCheck = 1540;
 				ORGANIZATIONNAME = "";
 				TargetAttributes = {
-					2915EC511D85BDF100621092 = {
-						CreatedOnToolsVersion = 8.0;
-						LastSwiftMigration = 1020;
-						ProvisioningStyle = Automatic;
-					};
-					29C9327D1CD76FB800283FC5 = {
-						CreatedOnToolsVersion = 7.3;
-						LastSwiftMigration = 1020;
-						SystemCapabilities = {
-							com.apple.BackgroundModes = {
-								enabled = 1;
-							};
-						};
-					};
-					29C932931CD76FD300283FC5 = {
-						CreatedOnToolsVersion = 7.3;
-						LastSwiftMigration = 1020;
-					};
 					29D3D4EE1ED0531500DD4AA6 = {
 						CreatedOnToolsVersion = 8.3.2;
 						LastSwiftMigration = 1020;
 					};
+					BC4B7DCB2E86D06700973BD7 = {
+						CreatedOnToolsVersion = 16.4;
+					};
+					BC6841612E3CFBE0008FBFEE = {
+						CreatedOnToolsVersion = 16.4;
+					};
 					BC7A0E3C2B088FA7005FB2F7 = {
 						CreatedOnToolsVersion = 15.1;
 					};
-					BCB798882CE06AEC0059DFE9 = {
-						CreatedOnToolsVersion = 16.1;
-						TestTargetID = 29C9327D1CD76FB800283FC5;
+					BCFE627D2E770A9900941209 = {
+						CreatedOnToolsVersion = 16.4;
 					};
 				};
 			};
@@ -523,39 +448,31 @@
 			);
 			projectRoot = "";
 			targets = (
-				29C9327D1CD76FB800283FC5 /* Example iOS */,
-				29C932931CD76FD300283FC5 /* Example macOS */,
+				BC6841612E3CFBE0008FBFEE /* Example iOS */,
+				BCFE627D2E770A9900941209 /* Example macOS */,
 				29D3D4EE1ED0531500DD4AA6 /* Example tvOS */,
 				BC7A0E3C2B088FA7005FB2F7 /* Example visionOS */,
-				2915EC511D85BDF100621092 /* Screencast */,
-				BCB798882CE06AEC0059DFE9 /* Tests */,
+				BC4B7DCB2E86D06700973BD7 /* Screencast */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		2915EC501D85BDF100621092 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		29C9327C1CD76FB800283FC5 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		29C932921CD76FD300283FC5 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		29D3D4ED1ED0531500DD4AA6 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BC4B7DCA2E86D06700973BD7 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BC6841602E3CFBE0008FBFEE /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -569,7 +486,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		BCB798872CE06AEC0059DFE9 /* Resources */ = {
+		BCFE627C2E770A9900941209 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -579,38 +496,6 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		29E51F2A1FEFDEB300F839F4 /* ShellScript */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "export PATH=\"$PATH:/opt/homebrew/bin\"\n\nif which swiftlint >/dev/null; then\nswiftlint\nelse\necho \"warning: SwiftLint not installed, download from https://github.com/realm/SwiftLint\"\nfi\n";
-		};
-		BCE5212828DCCD1E006A14E5 /* ShellScript */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "export PATH=\"$PATH:/opt/homebrew/bin\"\n\nif which swiftlint >/dev/null; then\nswiftlint\nelse\necho \"warning: SwiftLint not installed, download from https://github.com/realm/SwiftLint\"\nfi\n\n";
-		};
 		BCE5212928DCCD56006A14E5 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
@@ -632,39 +517,27 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		2915EC4E1D85BDF100621092 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				BC9129D22D12EBCE0077EFF3 /* HKStreamSwitcher.swift in Sources */,
-				BC91298D2D12EB5E0077EFF3 /* Preference.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		29C9327A1CD76FB800283FC5 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				BC9129892D12EB5E0077EFF3 /* Preference.swift in Sources */,
-				BC9129852D12EB570077EFF3 /* HKStreamSwitcher.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		29C932901CD76FD300283FC5 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				BC91298A2D12EB5E0077EFF3 /* Preference.swift in Sources */,
-				BC9129862D12EB570077EFF3 /* HKStreamSwitcher.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		29D3D4EB1ED0531500DD4AA6 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				BC91298B2D12EB5E0077EFF3 /* Preference.swift in Sources */,
-				BC9129872D12EB570077EFF3 /* HKStreamSwitcher.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BC4B7DC82E86D06700973BD7 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BC4B7DE92E86D14A00973BD7 /* Preference.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BC68415E2E3CFBE0008FBFEE /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BC05F96E2E3D248A002BCC92 /* Preference.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -673,105 +546,28 @@
 			buildActionMask = 2147483647;
 			files = (
 				BC91298C2D12EB5E0077EFF3 /* Preference.swift in Sources */,
-				BC9129882D12EB570077EFF3 /* HKStreamSwitcher.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		BCB798852CE06AEC0059DFE9 /* Sources */ = {
+		BCFE627A2E770A9900941209 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BCFE628F2E7710A100941209 /* Preference.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		BC2902372AA0E66A004821D2 /* PBXTargetDependency */ = {
+		BC4B7DD32E86D06700973BD7 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 2915EC511D85BDF100621092 /* Screencast */;
-			targetProxy = BC2902362AA0E66A004821D2 /* PBXContainerItemProxy */;
-		};
-		BCB7988E2CE06AEC0059DFE9 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 29C9327D1CD76FB800283FC5 /* Example iOS */;
-			targetProxy = BCB7988D2CE06AEC0059DFE9 /* PBXContainerItemProxy */;
+			target = BC4B7DCB2E86D06700973BD7 /* Screencast */;
+			targetProxy = BC4B7DD22E86D06700973BD7 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
-		2915EC701D85BDF200621092 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
-				CLANG_ANALYZER_NONNULL = YES;
-				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
-				CLANG_WARN_SUSPICIOUS_MOVES = YES;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
-				CODE_SIGN_STYLE = Automatic;
-				DEBUG_INFORMATION_FORMAT = dwarf;
-				DEVELOPMENT_TEAM = SUEQ2SZ2L5;
-				ENABLE_USER_SCRIPT_SANDBOXING = NO;
-				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
-				INFOPLIST_FILE = "$(SRCROOT)/iOS/Screencast/Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
-				MARKETING_VERSION = 1.0.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.haishinkit.HaishinKit.Example-iOS.Screencast";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				PROVISIONING_PROFILE_SPECIFIER = "";
-				SDKROOT = iphoneos;
-				SKIP_INSTALL = YES;
-				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
-				SUPPORTS_MACCATALYST = YES;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
-				SWIFT_STRICT_CONCURRENCY = complete;
-				SWIFT_VERSION = 5.0;
-				TVOS_DEPLOYMENT_TARGET = 13.0;
-			};
-			name = Debug;
-		};
-		2915EC711D85BDF200621092 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
-				CLANG_ANALYZER_NONNULL = YES;
-				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
-				CLANG_WARN_SUSPICIOUS_MOVES = YES;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
-				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = SUEQ2SZ2L5;
-				ENABLE_USER_SCRIPT_SANDBOXING = NO;
-				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
-				INFOPLIST_FILE = "$(SRCROOT)/Examples/iOS/Screencast/Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
-				MARKETING_VERSION = 1.0.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.haishinkit.HaishinKit.Example-iOS.Screencast";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				PROVISIONING_PROFILE_SPECIFIER = "";
-				SDKROOT = iphoneos;
-				SKIP_INSTALL = YES;
-				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
-				SUPPORTS_MACCATALYST = YES;
-				SWIFT_STRICT_CONCURRENCY = complete;
-				SWIFT_VERSION = 5.0;
-				TVOS_DEPLOYMENT_TARGET = 13.0;
-			};
-			name = Release;
-		};
 		2945CBD11B4BE66000104112 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -829,7 +625,7 @@
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = "";
-				SUPPORTED_PLATFORMS = "";
+				SUPPORTED_PLATFORMS = macosx;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TVOS_DEPLOYMENT_TARGET = 13.0;
@@ -887,7 +683,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = "";
-				SUPPORTED_PLATFORMS = "";
+				SUPPORTED_PLATFORMS = macosx;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -896,140 +692,6 @@
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
 				XROS_DEPLOYMENT_TARGET = 1.0;
-			};
-			name = Release;
-		};
-		29C9328E1CD76FB800283FC5 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CLANG_ANALYZER_NONNULL = YES;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
-				DEAD_CODE_STRIPPING = YES;
-				DEBUG_INFORMATION_FORMAT = dwarf;
-				DEVELOPMENT_TEAM = SUEQ2SZ2L5;
-				ENABLE_BITCODE = NO;
-				ENABLE_HARDENED_RUNTIME = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = NO;
-				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
-				GCC_OPTIMIZATION_LEVEL = 0;
-				INFOPLIST_FILE = "$(SRCROOT)/iOS/Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
-				ONLY_ACTIVE_ARCH = YES;
-				OTHER_SWIFT_FLAGS = "-enable-upcoming-feature ExistentialAny";
-				PRODUCT_BUNDLE_IDENTIFIER = "com.haishinkit.HaishinKit.Example-iOS";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				PROVISIONING_PROFILE_SPECIFIER = "";
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SUPPORTS_MACCATALYST = YES;
-				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
-				SWIFT_STRICT_CONCURRENCY = complete;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TVOS_DEPLOYMENT_TARGET = 13.0;
-				VALIDATE_PRODUCT = NO;
-				VALIDATE_WORKSPACE = YES;
-			};
-			name = Debug;
-		};
-		29C9328F1CD76FB800283FC5 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CLANG_ANALYZER_NONNULL = YES;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
-				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = SUEQ2SZ2L5;
-				ENABLE_BITCODE = NO;
-				ENABLE_HARDENED_RUNTIME = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = NO;
-				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
-				INFOPLIST_FILE = "$(SRCROOT)/iOS/Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
-				OTHER_SWIFT_FLAGS = "-enable-upcoming-feature ExistentialAny";
-				PRODUCT_BUNDLE_IDENTIFIER = "com.haishinkit.HaishinKit.Example-iOS";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				PROVISIONING_PROFILE_SPECIFIER = "";
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SUPPORTS_MACCATALYST = YES;
-				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
-				SWIFT_STRICT_CONCURRENCY = complete;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TVOS_DEPLOYMENT_TARGET = 13.0;
-			};
-			name = Release;
-		};
-		29C9329F1CD76FD400283FC5 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CLANG_ANALYZER_NONNULL = YES;
-				CODE_SIGN_IDENTITY = "-";
-				COMBINE_HIDPI_IMAGES = YES;
-				DEAD_CODE_STRIPPING = YES;
-				DEBUG_INFORMATION_FORMAT = dwarf;
-				ENABLE_USER_SCRIPT_SANDBOXING = NO;
-				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
-				INFOPLIST_FILE = "$(SRCROOT)/macOS/Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-				);
-				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				OTHER_SWIFT_FLAGS = "-enable-upcoming-feature ExistentialAny";
-				PRODUCT_BUNDLE_IDENTIFIER = "com.haishinkit.HaishinKit.Example-macOS";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = macosx;
-				SUPPORTED_PLATFORMS = macosx;
-				SUPPORTS_MACCATALYST = NO;
-				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
-				SWIFT_STRICT_CONCURRENCY = complete;
-				SWIFT_VERSION = 5.0;
-				TVOS_DEPLOYMENT_TARGET = 13.0;
-			};
-			name = Debug;
-		};
-		29C932A01CD76FD400283FC5 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CLANG_ANALYZER_NONNULL = YES;
-				CODE_SIGN_IDENTITY = "-";
-				COMBINE_HIDPI_IMAGES = YES;
-				DEAD_CODE_STRIPPING = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = NO;
-				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
-				INFOPLIST_FILE = "$(SRCROOT)/macOS/Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-				);
-				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				OTHER_SWIFT_FLAGS = "-enable-upcoming-feature ExistentialAny";
-				PRODUCT_BUNDLE_IDENTIFIER = "com.haishinkit.HaishinKit.Example-macOS";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = macosx;
-				SUPPORTED_PLATFORMS = macosx;
-				SUPPORTS_MACCATALYST = NO;
-				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
-				SWIFT_STRICT_CONCURRENCY = complete;
-				SWIFT_VERSION = 5.0;
-				TVOS_DEPLOYMENT_TARGET = 13.0;
 			};
 			name = Release;
 		};
@@ -1102,6 +764,198 @@
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 3;
 				TVOS_DEPLOYMENT_TARGET = 17.0;
+			};
+			name = Release;
+		};
+		BC4B7DD72E86D06700973BD7 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = SUEQ2SZ2L5;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = iOS/Screencast/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = HaishinKit;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 1.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.haishinkit.Example-iOS.Screencast";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		BC4B7DD82E86D06700973BD7 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = SUEQ2SZ2L5;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = iOS/Screencast/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = HaishinKit;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 1.0;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.haishinkit.Example-iOS.Screencast";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		BC68416C2E3CFBE2008FBFEE /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_ENTITLEMENTS = iOS/HaishinApp.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = SUEQ2SZ2L5;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = HaishinKit;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Camera access is requested for live streaming.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Microphone access is requested for live streaming.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Save the captured video and audio content.";
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.5;
+				MARKETING_VERSION = 1.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.haishinkit.Example-iOS";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				XROS_DEPLOYMENT_TARGET = 1.0;
+			};
+			name = Debug;
+		};
+		BC68416D2E3CFBE2008FBFEE /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_ENTITLEMENTS = iOS/HaishinApp.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = SUEQ2SZ2L5;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = HaishinKit;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Camera access is requested for live streaming.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Microphone access is requested for live streaming.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Save the captured video and audio content.";
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.5;
+				MARKETING_VERSION = 1.0;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.haishinkit.Example-iOS";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				XROS_DEPLOYMENT_TARGET = 1.0;
 			};
 			name = Release;
 		};
@@ -1190,110 +1044,99 @@
 			};
 			name = Release;
 		};
-		BCB7988F2CE06AEC0059DFE9 /* Debug */ = {
+		BCFE62882E770A9C00941209 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
-				BUNDLE_LOADER = "$(TEST_HOST)";
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
 				CLANG_ENABLE_OBJC_WEAK = YES;
 				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_ENTITLEMENTS = macOS/HaishinApp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = SUEQ2SZ2L5;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.1;
+				INFOPLIST_KEY_NSCameraUsageDescription = "";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MACOSX_DEPLOYMENT_TARGET = 14.5;
+				MACOSX_DEPLOYMENT_TARGET = 15.5;
 				MARKETING_VERSION = 1.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = com.haishinkit.Tests;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.haishinkit.Example-macOS";
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = auto;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = macosx;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
-				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2,7";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Example iOS.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Example iOS";
-				XROS_DEPLOYMENT_TARGET = 2.1;
 			};
 			name = Debug;
 		};
-		BCB798902CE06AEC0059DFE9 /* Release */ = {
+		BCFE62892E770A9C00941209 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
-				BUNDLE_LOADER = "$(TEST_HOST)";
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
 				CLANG_ENABLE_OBJC_WEAK = YES;
 				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_ENTITLEMENTS = macOS/HaishinApp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = SUEQ2SZ2L5;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.1;
+				INFOPLIST_KEY_NSCameraUsageDescription = "";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MACOSX_DEPLOYMENT_TARGET = 14.5;
+				MACOSX_DEPLOYMENT_TARGET = 15.5;
 				MARKETING_VERSION = 1.0;
 				MTL_FAST_MATH = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = com.haishinkit.Tests;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.haishinkit.Example-macOS";
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = auto;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
-				SWIFT_EMIT_LOC_STRINGS = NO;
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2,7";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Example iOS.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Example iOS";
-				XROS_DEPLOYMENT_TARGET = 2.1;
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		2915EC751D85BDF200621092 /* Build configuration list for PBXNativeTarget "Screencast" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				2915EC701D85BDF200621092 /* Debug */,
-				2915EC711D85BDF200621092 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		2945CBB71B4BE66000104112 /* Build configuration list for PBXProject "Examples" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				2945CBD11B4BE66000104112 /* Debug */,
 				2945CBD21B4BE66000104112 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		29C9328D1CD76FB800283FC5 /* Build configuration list for PBXNativeTarget "Example iOS" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				29C9328E1CD76FB800283FC5 /* Debug */,
-				29C9328F1CD76FB800283FC5 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		29C9329E1CD76FD400283FC5 /* Build configuration list for PBXNativeTarget "Example macOS" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				29C9329F1CD76FD400283FC5 /* Debug */,
-				29C932A01CD76FD400283FC5 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -1307,6 +1150,24 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		BC4B7DD62E86D06700973BD7 /* Build configuration list for PBXNativeTarget "Screencast" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BC4B7DD72E86D06700973BD7 /* Debug */,
+				BC4B7DD82E86D06700973BD7 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		BC68416B2E3CFBE2008FBFEE /* Build configuration list for PBXNativeTarget "Example iOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BC68416C2E3CFBE2008FBFEE /* Debug */,
+				BC68416D2E3CFBE2008FBFEE /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		BC7A0E542B088FA9005FB2F7 /* Build configuration list for PBXNativeTarget "Example visionOS" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -1316,11 +1177,11 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		BCB798912CE06AEC0059DFE9 /* Build configuration list for PBXNativeTarget "Tests" */ = {
+		BCFE62872E770A9C00941209 /* Build configuration list for PBXNativeTarget "Example macOS" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				BCB7988F2CE06AEC0059DFE9 /* Debug */,
-				BCB798902CE06AEC0059DFE9 /* Release */,
+				BCFE62882E770A9C00941209 /* Debug */,
+				BCFE62892E770A9C00941209 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -1339,16 +1200,6 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		BC33A11C2CDF52550016EEA0 /* HaishinKit */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = BC33A1172CDF51620016EEA0 /* XCLocalSwiftPackageReference "../HaishinKit.swift" */;
-			productName = HaishinKit;
-		};
-		BC33A11E2CDF52550016EEA0 /* SRTHaishinKit */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = BC33A1172CDF51620016EEA0 /* XCLocalSwiftPackageReference "../HaishinKit.swift" */;
-			productName = SRTHaishinKit;
-		};
 		BC33A1202CDF525B0016EEA0 /* HaishinKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = BC33A1172CDF51620016EEA0 /* XCLocalSwiftPackageReference "../HaishinKit.swift" */;
@@ -1359,37 +1210,50 @@
 			package = BC33A1172CDF51620016EEA0 /* XCLocalSwiftPackageReference "../HaishinKit.swift" */;
 			productName = SRTHaishinKit;
 		};
-		BC33A1282CDF526C0016EEA0 /* HaishinKit */ = {
+		BC4B7DDF2E86D13C00973BD7 /* HaishinKit */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = BC33A1172CDF51620016EEA0 /* XCLocalSwiftPackageReference "../HaishinKit.swift" */;
 			productName = HaishinKit;
 		};
-		BC33A12A2CDF526C0016EEA0 /* SRTHaishinKit */ = {
+		BC4B7DE12E86D13C00973BD7 /* MoQTHaishinKit */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = BC33A1172CDF51620016EEA0 /* XCLocalSwiftPackageReference "../HaishinKit.swift" */;
+			productName = MoQTHaishinKit;
+		};
+		BC4B7DE32E86D13C00973BD7 /* RTCHaishinKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = RTCHaishinKit;
+		};
+		BC4B7DE52E86D13C00973BD7 /* RTMPHaishinKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = RTMPHaishinKit;
+		};
+		BC4B7DE72E86D13C00973BD7 /* SRTHaishinKit */ = {
+			isa = XCSwiftPackageProductDependency;
 			productName = SRTHaishinKit;
 		};
-		BC47FA342CE61FCF002900AE /* MoQTHaishinKit */ = {
+		BC6842B52E3D1294008FBFEE /* HaishinKit */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = BC33A1172CDF51620016EEA0 /* XCLocalSwiftPackageReference "../HaishinKit.swift" */;
+			productName = HaishinKit;
+		};
+		BC6842B72E3D1294008FBFEE /* MoQTHaishinKit */ = {
+			isa = XCSwiftPackageProductDependency;
 			productName = MoQTHaishinKit;
+		};
+		BC6842B92E3D1294008FBFEE /* RTMPHaishinKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = RTMPHaishinKit;
+		};
+		BC6842BB2E3D1294008FBFEE /* SRTHaishinKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = SRTHaishinKit;
 		};
 		BC912DDC2D185D360077EFF3 /* MoQTHaishinKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = BC9128822D12E7AD0077EFF3 /* XCLocalSwiftPackageReference "../../HaishinKit.swift" */;
 			productName = MoQTHaishinKit;
 		};
-		BCD917002D3A94B100D30743 /* HaishinKit */ = {
+		BCD2478B2E54C04E00C64280 /* RTCHaishinKit */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = HaishinKit;
-		};
-		BCD917022D3A94B100D30743 /* MoQTHaishinKit */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = MoQTHaishinKit;
-		};
-		BCD917042D3A94B100D30743 /* SRTHaishinKit */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = SRTHaishinKit;
+			productName = RTCHaishinKit;
 		};
 		BCD917062D3A94BC00D30743 /* HaishinKit */ = {
 			isa = XCSwiftPackageProductDependency;
@@ -1400,6 +1264,30 @@
 			productName = MoQTHaishinKit;
 		};
 		BCD9170A2D3A94BC00D30743 /* SRTHaishinKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = SRTHaishinKit;
+		};
+		BCEC2BBD2E104D9100422F8F /* RTMPHaishinKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = RTMPHaishinKit;
+		};
+		BCEC2BBF2E104D9A00422F8F /* RTMPHaishinKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = RTMPHaishinKit;
+		};
+		BCFE62902E7710D800941209 /* HaishinKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = HaishinKit;
+		};
+		BCFE62A72E77179F00941209 /* RTCHaishinKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = RTCHaishinKit;
+		};
+		BCFE62A92E77179F00941209 /* RTMPHaishinKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = RTMPHaishinKit;
+		};
+		BCFE62AB2E77179F00941209 /* SRTHaishinKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = SRTHaishinKit;
 		};

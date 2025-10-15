@@ -141,9 +141,9 @@ final class MixerNode: AudioNode {
             componentManufacturer: kAudioUnitManufacturer_Apple,
             componentFlags: 0,
             componentFlagsMask: 0)
-        
+
         try super.init(description: &mixerDefaultDesc)
-        
+
         self.mixerComponentDescription = mixerDefaultDesc
     }
 
@@ -240,16 +240,16 @@ final class OutputNode: AudioNode {
             throw Error.unableToAllocateBuffer
         }
         self.buffer = buffer
-        
+
         var outputDefaultDesc = AudioComponentDescription(
             componentType: kAudioUnitType_Output,
             componentSubType: kAudioUnitSubType_GenericOutput,
             componentManufacturer: kAudioUnitManufacturer_Apple,
             componentFlags: 0,
             componentFlagsMask: 0)
-        
+
         try super.init(description: &outputDefaultDesc)
-        
+
         self.outputComponentDescription = outputDefaultDesc
     }
 

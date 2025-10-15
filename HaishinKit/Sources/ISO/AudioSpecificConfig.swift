@@ -5,10 +5,10 @@ import AVFoundation
  - seealso: http://wiki.multimedia.cx/index.php?title=MPEG-4_Audio#Audio_Specific_Config
  - seealso: http://wiki.multimedia.cx/?title=Understanding_AAC
  */
-struct AudioSpecificConfig: Equatable {
-    static let adtsHeaderSize: Int = 7
+package struct AudioSpecificConfig: Equatable {
+    package static let adtsHeaderSize: Int = 7
 
-    enum AudioObjectType: UInt8 {
+    package enum AudioObjectType: UInt8 {
         case unknown = 0
         case aacMain = 1
         case aacLc = 2
@@ -216,14 +216,14 @@ struct AudioSpecificConfig: Equatable {
     let channelConfig: ChannelConfiguration
     let frameLengthFlag = false
 
-    var bytes: [UInt8] {
+    package var bytes: [UInt8] {
         var bytes = [UInt8](repeating: 0, count: 2)
         bytes[0] = type.rawValue << 3 | (frequency.rawValue >> 1)
         bytes[1] = (frequency.rawValue & 0x1) << 7 | (channelConfig.rawValue & 0xF) << 3
         return bytes
     }
 
-    init?(bytes: [UInt8]) {
+    package init?(bytes: [UInt8]) {
         guard
             let type = AudioObjectType(rawValue: bytes[0] >> 3),
             let frequency = SamplingFrequency(rawValue: (bytes[0] & 0b00000111) << 1 | (bytes[1] >> 7)),
@@ -241,7 +241,7 @@ struct AudioSpecificConfig: Equatable {
         self.channelConfig = channel
     }
 
-    init?(formatDescription: CMFormatDescription?) {
+    package init?(formatDescription: CMFormatDescription?) {
         guard
             let streamDescription = formatDescription?.audioStreamBasicDescription,
             let type = AudioObjectType(objectID: MPEG4ObjectID(rawValue: Int(streamDescription.mFormatFlags))),
@@ -265,7 +265,7 @@ struct AudioSpecificConfig: Equatable {
         data[6] = 0xFC
     }
 
-    func makeAudioFormat() -> AVAudioFormat? {
+    package func makeAudioFormat() -> AVAudioFormat? {
         var audioStreamBasicDescription = makeAudioStreamBasicDescription()
         if let audioChannelLayoutTag = channelConfig.audioChannelLayoutTag {
             return AVAudioFormat(
@@ -293,7 +293,7 @@ struct AudioSpecificConfig: Equatable {
 
 extension AudioSpecificConfig: CustomDebugStringConvertible {
     // MARK: CustomDebugStringConvertible
-    var debugDescription: String {
+    package var debugDescription: String {
         Mirror(reflecting: self).debugDescription
     }
 }

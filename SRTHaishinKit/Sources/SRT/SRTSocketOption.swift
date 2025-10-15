@@ -3,6 +3,12 @@ import libsrt
 
 /// A structure that represents a Key-Value-Object for the SRTSocket.
 public struct SRTSocketOption: Sendable {
+    /// The error domain codes.
+    public enum Error: Swift.Error {
+        case invalidOption(_ message: String)
+        case invalidArgument(_ message: String)
+    }
+
     private static let trueStringLiterals: [String: Bool] = [
         "1": true,
         "on": true,
@@ -41,22 +47,22 @@ public struct SRTSocketOption: Sendable {
             switch self {
             case .string:
                 guard let data = String(describing: value).data(using: .utf8) else {
-                    throw SRTError.invalidArgument(message: "\(value)")
+                    throw Error.invalidArgument("\(value)")
                 }
                 return data
             case .bool:
                 guard var value = value as? Bool else {
-                    throw SRTError.invalidArgument(message: "\(value)")
+                    throw Error.invalidArgument("\(value)")
                 }
                 return .init(bytes: &value, count: size)
             case .int32:
                 guard var value = value as? Int32 else {
-                    throw SRTError.invalidArgument(message: "\(value)")
+                    throw Error.invalidArgument("\(value)")
                 }
                 return .init(bytes: &value, count: size)
             case .int64:
                 guard var value = value as? Int64 else {
-                    throw SRTError.invalidArgument(message: "\(value)")
+                    throw Error.invalidArgument("\(value)")
                 }
                 return .init(bytes: &value, count: size)
             }
@@ -149,7 +155,7 @@ public struct SRTSocketOption: Sendable {
                 case "file":
                     self.data = try name.type.data(Int32(SRTT_FILE.rawValue))
                 default:
-                    throw SRTError.invalidOption(message: name.rawValue)
+                    throw Error.invalidOption(name.rawValue)
                 }
             default:
                 self.data = try name.type.data(Int32(value))
@@ -163,7 +169,7 @@ public struct SRTSocketOption: Sendable {
             } else if let bool = Self.falseStringLiterals[key] {
                 self.data = try name.type.data(bool)
             } else {
-                throw SRTError.invalidOption(message: name.rawValue)
+                throw Error.invalidOption(name.rawValue)
             }
         }
     }
@@ -194,7 +200,7 @@ public struct SRTSocketOption: Sendable {
             return srt_getsockflag(socket, name.symbol, buffer, &length)
         }
         if result < 0 {
-            throw SRTError.invalidOption(message: String(cString: srt_getlasterror_str()))
+            throw Error.invalidOption(String(cString: srt_getlasterror_str()))
         }
         self.data = data.subdata(in: 0..<Data.Index(length))
     }
@@ -207,7 +213,7 @@ public struct SRTSocketOption: Sendable {
             return srt_setsockflag(socket, name.symbol, buffer, Int32(data.count))
         }
         if result < 0 {
-            throw SRTError.invalidOption(message: String(cString: srt_getlasterror_str()))
+            throw Error.invalidOption(String(cString: srt_getlasterror_str()))
         }
     }
 }

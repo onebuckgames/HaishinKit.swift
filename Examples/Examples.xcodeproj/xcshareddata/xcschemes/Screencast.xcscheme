@@ -16,7 +16,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "2915EC511D85BDF100621092"
+               BlueprintIdentifier = "BC4B7DCB2E86D06700973BD7"
                BuildableName = "Screencast.appex"
                BlueprintName = "Screencast"
                ReferencedContainer = "container:Examples.xcodeproj">
@@ -30,7 +30,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "29C9327D1CD76FB800283FC5"
+               BlueprintIdentifier = "BC6841612E3CFBE0008FBFEE"
                BuildableName = "Example iOS.app"
                BlueprintName = "Example iOS"
                ReferencedContainer = "container:Examples.xcodeproj">
@@ -61,7 +61,7 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "29C9327D1CD76FB800283FC5"
+            BlueprintIdentifier = "BC6841612E3CFBE0008FBFEE"
             BuildableName = "Example iOS.app"
             BlueprintName = "Example iOS"
             ReferencedContainer = "container:Examples.xcodeproj">
@@ -80,7 +80,7 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "29C9327D1CD76FB800283FC5"
+            BlueprintIdentifier = "BC6841612E3CFBE0008FBFEE"
             BuildableName = "Example iOS.app"
             BlueprintName = "Example iOS"
             ReferencedContainer = "container:Examples.xcodeproj">

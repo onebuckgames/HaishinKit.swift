@@ -3,10 +3,10 @@ import CoreImage
 import Foundation
 
 /// An object that apply a video effect.
-/// - seealso: https://developer.apple.com/documentation/coreimage/processing_an_image_using_built-in_filters
+/// - seealso:[Processing an Image Using Built-in Filters](https://developer.apple.com/documentation/coreimage/processing_an_image_using_built-in_filters)
 ///
 /// ## Example code:
-/// ```
+/// ```swift
 /// final class MonochromeEffect: VideoEffect {
 ///     let filter: CIFilter? = CIFilter(name: "CIColorMonochrome")
 ///

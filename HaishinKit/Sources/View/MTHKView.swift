@@ -154,12 +154,12 @@ extension MTHKView: MediaMixerOutput {
     }
 }
 
-extension MTHKView: HKStreamOutput {
+extension MTHKView: StreamOutput {
     // MARK: HKStreamOutput
-    nonisolated public func stream(_ stream: some HKStream, didOutput audio: AVAudioBuffer, when: AVAudioTime) {
+    nonisolated public func stream(_ stream: some StreamConvertible, didOutput audio: AVAudioBuffer, when: AVAudioTime) {
     }
 
-    nonisolated public func stream(_ stream: some HKStream, didOutput video: CMSampleBuffer) {
+    nonisolated public func stream(_ stream: some StreamConvertible, didOutput video: CMSampleBuffer) {
         Task { @MainActor in
             displayImage = try? video.imageBuffer?.makeCIImage()
             #if os(macOS)
