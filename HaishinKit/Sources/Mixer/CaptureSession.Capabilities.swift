@@ -82,7 +82,7 @@ extension CaptureSession {
             }
             if #available(iOS 16.0, *) {
                 if session.isMultitaskingCameraAccessSupported {
-                    session.isMultitaskingCameraAccessEnabled = true
+//                    session.isMultitaskingCameraAccessEnabled = true
                 }
             } else {
                 
