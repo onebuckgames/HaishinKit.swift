@@ -5,7 +5,7 @@ import Foundation
 #if targetEnvironment(macCatalyst)
 extension AVCaptureSession {
     var isMultitaskingCameraAccessSupported: Bool {
-        false
+        true
     }
 
     var isMultitaskingCameraAccessEnabled: Bool {
