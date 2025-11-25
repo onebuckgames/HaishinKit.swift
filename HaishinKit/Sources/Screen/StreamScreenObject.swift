@@ -6,17 +6,15 @@ import Foundation
 /// An object that manages offscreen rendering a streaming video track source.
 ///
 /// ## Usage
+/// ```swift
 /// var streamScreenObject = StreamScreenObject()
 ///
-/// ```
 /// Task {
 ///   // Register to the Stream's Output observer.
 ///   stream.addOutput(streamScreenObject)
 ///   stream.play("yourStreamName")
 /// }
-/// ```
 ///
-/// ```
 /// Task { @ScreenActor in
 ///  streamScreenObject.layoutMargin = .init(top: 16, left: 0, bottom: 0, right: 16)
 ///  streamScreenObject.size = .init(width: 160 * 2, height: 90 * 2)
