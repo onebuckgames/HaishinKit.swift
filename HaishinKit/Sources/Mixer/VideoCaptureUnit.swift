@@ -140,15 +140,15 @@ final class VideoCaptureUnit: CaptureUnit {
         guard !session.isMultitaskingCameraAccessEnabled else {
             return
         }
-        if background {
-            for capture in devices.values {
-                session.detachCapture(capture)
-            }
-        } else {
-            for capture in devices.values {
-                session.attachCapture(capture)
-            }
-        }
+//        if background {
+//            for capture in devices.values {
+//                session.detachCapture(capture)
+//            }
+//        } else {
+//            for capture in devices.values {
+//                session.attachCapture(capture)
+//            }
+//        }
     }
 
     @available(tvOS 17.0, *)
