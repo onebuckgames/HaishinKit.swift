@@ -613,7 +613,6 @@ extension IOStream: IOScreenCaptureUnitDelegate {
 
 #if os(macOS)
 extension IOStream: SCStreamOutput {
-    @available(macOS 12.3, *)
     public func stream(_ stream: SCStream, didOutputSampleBuffer sampleBuffer: CMSampleBuffer, of type: SCStreamOutputType) {
         if #available(macOS 13.0, *) {
             switch type {
